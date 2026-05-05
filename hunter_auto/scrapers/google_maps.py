@@ -41,16 +41,28 @@ class GoogleMapsScraper:
                             if not sheets_client.lead_exists(phone=name):
                                 lead = {
                                     "id": f"gm_{str(random.randint(100000, 999999))}",
+                                    "name": "",
+                                    "title": "",
                                     "company": name,
+                                    "linkedin_url": "",
                                     "source": "google_maps",
                                     "sector": sector,
                                     "status": "pending_enrichment",
                                     "notes": f"WEBSITE: {website_url}" if website_url else ""
                                 }
                                 
-                                leads.append(lead)
-                                sheets_client.add_lead(lead)
-                                logger.info(f"Saved raw lead: {name} to pipeline.")
+                                logger.info(f"Checking contact options for {name}...")
+                                enrichment = web_enricher.enrich_lead(name, website_url)
+                                
+                                if enrichment.get("emails") or enrichment.get("phones"):
+                                    lead["email"] = enrichment["emails"][0] if enrichment.get("emails") else ""
+                                    lead["phone"] = enrichment["phones"][0] if enrichment.get("phones") else ""
+                                    
+                                    leads.append(lead)
+                                    sheets_client.add_lead(lead)
+                                    logger.info(f"Saved lead: {name} to pipeline (found contacts).")
+                                else:
+                                    logger.info(f"Skipping lead {name} - No contact options (email/phone) found.")
                             else:
                                 logger.info(f"Lead {name} already exists. Skipping.")
                         except Exception as e:

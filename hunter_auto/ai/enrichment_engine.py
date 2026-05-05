@@ -27,7 +27,7 @@ class EnrichmentEngine:
             logger.info(f"Enriching lead: {company}")
             
             # 1. Extract contacts if missing
-            if not email or not phone:
+            if not email and not phone:
                 if website:
                     enrich_res = web_enricher.enrich_lead(company, website)
                     if enrich_res.get('emails') and not email:

@@ -53,11 +53,26 @@ class SheetsClient:
             pass
         return False
 
+    def _safe_get_all_records(self):
+        if not self.leads_ws: return []
+        try:
+            return self.leads_ws.get_all_records()
+        except Exception:
+            values = self.leads_ws.get_all_values()
+            if not values or len(values) < 2: return []
+            headers = [h if h else f"Col{i}" for i, h in enumerate(values[0])]
+            records = []
+            for row in values[1:]:
+                # Pad row with empty strings if it's shorter than headers
+                padded_row = row + [''] * (len(headers) - len(row))
+                records.append(dict(zip(headers, padded_row)))
+            return records
+
     def update_lead_data(self, lead_id, updates):
         if not self.leads_ws: return
         from config.logger import logger
         try:
-            records = self.leads_ws.get_all_records()
+            records = self._safe_get_all_records()
             headers = self.leads_ws.row_values(1)
             for idx, row in enumerate(records, start=2):
                 if str(row.get('ID')) == str(lead_id):
@@ -72,31 +87,37 @@ class SheetsClient:
     def get_pending_enrichment_leads(self):
         if not self.leads_ws: return []
         try:
-            records = self.leads_ws.get_all_records()
+            records = self._safe_get_all_records()
             return [r for r in records if str(r.get('Status', '')).lower() == 'pending_enrichment']
-        except:
+        except Exception as e:
+            from config.logger import logger
+            logger.error(f"Error in get_pending_enrichment_leads: {e}")
             return []
 
     def get_pending_leads(self):
         if not self.leads_ws: return []
         try:
-            records = self.leads_ws.get_all_records()
+            records = self._safe_get_all_records()
             return [r for r in records if str(r.get('Status', '')).lower() == 'pending']
-        except:
+        except Exception as e:
+            from config.logger import logger
+            logger.error(f"Error in get_pending_leads: {e}")
             return []
 
     def get_all_leads(self, limit=100):
         if not self.leads_ws: return []
         try:
-            records = self.leads_ws.get_all_records()
-            return records[-limit:]  # return the newest subset
-        except:
+            records = self._safe_get_all_records()
+            return records[-limit:] if records else []
+        except Exception as e:
+            from config.logger import logger
+            logger.error(f"Error in get_all_leads: {e}")
             return []
 
     def update_lead_status(self, lead_id, status, notes=""):
         if not self.leads_ws: return
         try:
-            records = self.leads_ws.get_all_records()
+            records = self._safe_get_all_records()
             for idx, row in enumerate(records, start=2):
                 if str(row.get('ID')) == str(lead_id):
                     self.leads_ws.update_cell(idx, 10, status)
@@ -109,7 +130,7 @@ class SheetsClient:
     def get_stats(self):
         if not self.leads_ws: return {"total": 0, "sent": 0, "meetings": 0, "response_rate": "0%"}
         try:
-            records = self.leads_ws.get_all_records()
+            records = self._safe_get_all_records()
             total = len(records)
             sent = len([r for r in records if r.get('Status') in ['linkedin_sent', 'email_sent', 'responded', 'meeting_booked']])
             meetings = len([r for r in records if r.get('Status') == 'meeting_booked'])

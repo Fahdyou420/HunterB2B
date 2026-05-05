@@ -88,9 +88,23 @@ def resume_scheduler():
 @app.route('/api/action/trigger_scrape', methods=['POST'])
 def trigger_scrape():
     from config.logger import logger
-    logger.info("Manual trigger: Scraping Layer (Maps & LinkedIn)")
-    threading.Thread(target=agent.scrape_job).start()
-    return jsonify({"success": True, "message": "Scraping Layer started"}), 200
+    
+    sector = request.form.get('sector', 'IT')
+    limit = int(request.form.get('limit', 10))
+    source = request.form.get('source', 'both')
+    
+    logger.info(f"Manual trigger: Scraping Layer | Source: {source} | Sector: {sector} | Limit: {limit}")
+    
+    def run_custom_scrape():
+        if source in ['maps', 'both']:
+            from scrapers.google_maps import google_maps_scraper
+            google_maps_scraper.scrape_by_sector(sector, limit=limit)
+        if source in ['linkedin', 'both']:
+            from scrapers.linkedin_scraper import linkedin_scraper
+            linkedin_scraper.scrape_decision_makers(sector, limit=limit)
+            
+    threading.Thread(target=run_custom_scrape).start()
+    return jsonify({"success": True, "message": f"Scraping started for {sector} on {source}"}), 200
 
 @app.route('/api/action/trigger_enrich', methods=['POST'])
 def trigger_enrich():

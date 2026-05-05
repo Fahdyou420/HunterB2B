@@ -24,8 +24,8 @@ class LinkedinScraper:
             time.sleep(3)
         logger.info("LinkedIn login complete")
         
-    def scrape_decision_makers(self, sector):
-        logger.info(f"Scraping LinkedIn for {sector}")
+    def scrape_decision_makers(self, sector, limit=10):
+        logger.info(f"Scraping LinkedIn for {sector} with target {limit} leads")
         queries = [f"directeur {sector} Tunisie", f"CEO {sector} Tunisie"]
         leads = []
         
@@ -41,38 +41,56 @@ class LinkedinScraper:
                     context.storage_state(path=self.session_dir+"/state.json")
                 
                 for query in queries:
+                    if len(leads) >= limit:
+                        break
                     logger.info(f"Searching LinkedIn: {query}")
                     search_url = f"https://www.linkedin.com/search/results/people/?keywords={query.replace(' ', '%20')}"
                     page.goto(search_url)
                     time.sleep(random.uniform(4, 7))
                     
-                    results = page.locator(".reusable-search__result-container").all()
-                    for res in results[:10]:
-                        try:
-                            name_el = res.locator(".app-aware-link").first
-                            name = name_el.inner_text().split("\n")[0]
-                            url = "https://www.linkedin.com" + name_el.get_attribute("href").split('?')[0]
-                            title = res.locator(".entity-result__primary-subtitle").inner_text() if res.locator(".entity-result__primary-subtitle").count() > 0 else ""
-                            
-                            logger.info(f"Processing LI lead: {name}")
-                            if not sheets_client.lead_exists(linkedin_url=url):
-                                lead = {
-                                    "id": f"li_{str(random.randint(100000, 999999))}",
-                                    "name": name,
-                                    "title": title,
-                                    "company": "",
-                                    "linkedin_url": url,
-                                    "source": "linkedin",
-                                    "sector": sector,
-                                    "status": "pending_enrichment"
-                                }
-                                leads.append(lead)
-                                sheets_client.add_lead(lead)
-                                logger.info(f"Saved LinkedIn lead: {name}")
+                    page_num = 1
+                    while len(leads) < limit and page_num <= 5: # max 5 pages per query
+                        results = page.locator(".reusable-search__result-container").all()
+                        for res in results:
+                            if len(leads) >= limit: break
+                            try:
+                                name_el = res.locator(".app-aware-link").first
+                                name = name_el.inner_text().split("\n")[0]
+                                url = "https://www.linkedin.com" + name_el.get_attribute("href").split('?')[0]
+                                title = res.locator(".entity-result__primary-subtitle").inner_text() if res.locator(".entity-result__primary-subtitle").count() > 0 else ""
+                                
+                                logger.info(f"Processing LI lead: {name}")
+                                if not sheets_client.lead_exists(linkedin_url=url):
+                                    lead = {
+                                        "id": f"li_{str(random.randint(100000, 999999))}",
+                                        "name": name,
+                                        "title": title,
+                                        "company": "",
+                                        "linkedin_url": url,
+                                        "source": "linkedin",
+                                        "sector": sector,
+                                        "status": "pending_enrichment",
+                                        "notes": ""
+                                    }
+                                    leads.append(lead)
+                                    sheets_client.add_lead(lead)
+                                    logger.info(f"Saved LinkedIn lead: {name}")
+                                else:
+                                    logger.info(f"Lead {name} already exists.")
+                            except Exception as e:
+                                logger.error(f"Error extracting LI lead: {e}")
+                                
+                        # Go to next page
+                        if len(leads) < limit:
+                            next_btn = page.locator("button[aria-label='Next']")
+                            if next_btn.count() > 0 and not next_btn.is_disabled():
+                                page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                                time.sleep(random.uniform(1, 2))
+                                next_btn.click()
+                                time.sleep(random.uniform(4, 7))
+                                page_num += 1
                             else:
-                                logger.info(f"Lead {name} already exists.")
-                        except Exception as e:
-                            logger.error(f"Error extracting LI lead: {e}")
+                                break
             except Exception as e:
                 logger.error(f"Linkedin scraper error: {e}")
             finally:

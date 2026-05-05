@@ -27,9 +27,24 @@
         <!-- Layer 1 -->
         <div style="background: #F8FAFC; border: 1px dashed #CBD5E1; padding: 16px; border-radius: 8px; text-align: center;">
             <div style="color: #64748B; font-size: 12px; text-transform: uppercase; font-weight: 600; margin-bottom: 8px;">1. Scraping Layer</div>
-            <button class="btn" style="width: 100%; justify-content: center; background: white; border: 1px solid #E2E8F0; color: #0F172A;" hx-post="/api/action/trigger_scrape" hx-swap="none" onclick="alert('Google Maps scraping started. Check logs.')">
-                <i data-lucide="map-pin" size="16"></i> Maps Scrape
-            </button>
+            <form hx-post="/api/action/trigger_scrape" hx-swap="none" onsubmit="alert('Scraping started. Check logs.')" style="display: flex; flex-direction: column; gap: 8px; text-align: left;">
+                <label style="font-size: 12px; color: #475569;">Target Sector:</label>
+                <input type="text" name="sector" value="IT" style="padding: 6px; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 4px;" required>
+                
+                <label style="font-size: 12px; color: #475569;">Limit per source:</label>
+                <input type="number" name="limit" value="10" min="1" max="50" style="padding: 6px; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 4px;" required>
+                
+                <label style="font-size: 12px; color: #475569;">Source:</label>
+                <select name="source" style="padding: 6px; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 4px;">
+                    <option value="both">Both (Maps + LinkedIn)</option>
+                    <option value="maps">Google Maps Only</option>
+                    <option value="linkedin">LinkedIn Only</option>
+                </select>
+
+                <button type="submit" class="btn" style="width: 100%; justify-content: center; background: white; border: 1px solid #E2E8F0; color: #0F172A; margin-top: 8px;">
+                    <i data-lucide="search" size="16"></i> Scrape Now
+                </button>
+            </form>
         </div>
 
         <!-- Layer 2 -->

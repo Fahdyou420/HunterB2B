@@ -6,8 +6,8 @@ from config.logger import logger
 from scrapers.web_enricher import web_enricher
 
 class GoogleMapsScraper:
-    def scrape_by_sector(self, sector):
-        logger.info(f"Starting Google Maps scrape for sector: {sector}")
+    def scrape_by_sector(self, sector, limit=10):
+        logger.info(f"Starting Google Maps scrape for sector: {sector} with limit: {limit}")
         queries = [f"entreprises {sector} Tunisie", f"{sector} Tunis"]
         
         leads = []
@@ -17,6 +17,9 @@ class GoogleMapsScraper:
             page = context.new_page()
             
             for query in queries:
+                if len(leads) >= limit:
+                    break
+                    
                 try:
                     logger.info(f"Navigating to maps search: {query}")
                     page.goto(f"https://www.google.com/maps/search/{query.replace(' ', '+')}")
@@ -27,10 +30,26 @@ class GoogleMapsScraper:
                     except:
                         pass
                     
-                    elements = page.locator(".Nv2PK").all()
-                    logger.info(f"Found {len(elements[:10])} results for {query}")
+                    # Scroll feed to load more results
+                    feed_selector = "div[role='feed']"
+                    page.wait_for_selector(feed_selector, timeout=10000)
                     
-                    for el in elements[:10]:
+                    elements_count = 0
+                    scroll_attempts = 0
+                    while elements_count < limit and scroll_attempts < 10:
+                        page.locator(feed_selector).evaluate("el => el.scrollBy(0, 5000)")
+                        time.sleep(random.uniform(2, 4))
+                        new_count = page.locator(".Nv2PK").count()
+                        if new_count == elements_count:
+                            scroll_attempts += 1
+                        else:
+                            scroll_attempts = 0
+                            elements_count = new_count
+                            
+                    elements = page.locator(".Nv2PK").all()
+                    logger.info(f"Found {len(elements)} results for {query} (Processing up to {limit})")
+                    
+                    for el in elements[:limit]:
                         try:
                             name = el.locator(".qBF1Pd").inner_text() if el.locator(".qBF1Pd").count() > 0 else "Unknown"
                             website_el = el.locator("a[href^='http']").first

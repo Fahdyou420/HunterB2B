@@ -9,12 +9,25 @@ class SheetsClient:
             self.creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_CREDENTIALS_PATH, scope)
             self.client = gspread.authorize(self.creds)
             self.sheet = self.client.open_by_key(GOOGLE_SHEETS_ID)
-            self.leads_ws = self.sheet.worksheet("Hunter_Auto_Leads")
-            self.log_ws = self.sheet.worksheet("Hunter_Auto_Log")
         except Exception as e:
-            print(f"Error authenticating with Google Sheets: {e}")
+            print(f"Error authenticating with Google Sheets API: {e}")
             self.leads_ws = None
             self.log_ws = None
+            return
+
+        try:
+            self.leads_ws = self.sheet.worksheet("Hunter_Auto_Leads")
+        except Exception:
+            print("Creating missing Hunter_Auto_Leads worksheet...")
+            self.leads_ws = self.sheet.add_worksheet(title="Hunter_Auto_Leads", rows="1000", cols="20")
+            self.leads_ws.append_row(["ID", "Company", "Name", "Title", "Phone", "Email", "LinkedIn URL", "Source", "Score", "Status", "Message Sent", "Sent At", "Notes"])
+
+        try:
+            self.log_ws = self.sheet.worksheet("Hunter_Auto_Log")
+        except Exception:
+            print("Creating missing Hunter_Auto_Log worksheet...")
+            self.log_ws = self.sheet.add_worksheet(title="Hunter_Auto_Log", rows="1000", cols="5")
+            self.log_ws.append_row(["Timestamp", "Level", "Message", "Lead ID"])
 
     def add_lead(self, lead_data):
         if not self.leads_ws: return

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="header">
+    <h1>System Settings</h1>
+    <p>Configure agent parameters and targeting.</p>
+</div>
+<div class="settings-card">
+    <form method="POST">
+        <h3>Target Sectors</h3>
+        <p style="color: #64748B; font-size: 14px; margin-bottom: 20px;">
+            Select which sectors the Hunter Auto agent should focus on in the Tunisian market.
+        </p>
+        <div class="checkbox-group">
+            {% for sector in sectors %}
+            <label><input type="checkbox" name="sectors" value="{{ sector }}" checked> {{ sector }}</label>
+            {% endfor %}
+        </div>
+        <div style="display: flex; gap: 12px; border-top: 1px solid #E2E8F0; padding-top: 24px;">
+            <button type="submit" class="btn"><i data-lucide="save"></i> Save Configuration</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+flask
+gspread
+oauth2client
+playwright
+beautifulsoup4
+apscheduler
+python-telegram-bot
+python-dotenv
+requests

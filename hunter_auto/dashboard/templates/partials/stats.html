@@ -1,0 +1,30 @@
+<div class="stats-grid" hx-get="/api/stats-html" hx-trigger="every 30s" hx-swap="outerHTML">
+    <div class="stat-card">
+        <div class="header-row">
+            <h3>Total Leads</h3>
+            <div class="icon"><i data-lucide="users" size="18"></i></div>
+        </div>
+        <div class="value">{{ stats.total }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="header-row">
+            <h3>Sent Today</h3>
+            <div class="icon"><i data-lucide="send" size="18"></i></div>
+        </div>
+        <div class="value">{{ stats.sent }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="header-row">
+            <h3>Response Rate</h3>
+            <div class="icon"><i data-lucide="bar-chart-2" size="18"></i></div>
+        </div>
+        <div class="value">{{ stats.response_rate }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="header-row">
+            <h3>Meetings Booked</h3>
+            <div class="icon"><i data-lucide="calendar-check" size="18"></i></div>
+        </div>
+        <div class="value">{{ stats.meetings }}</div>
+    </div>
+</div>

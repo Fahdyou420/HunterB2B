@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="header">
+    <h1>Dashboard</h1>
+    <p>System overview and automated agent metrics.</p>
+</div>
+
+{% include 'partials/controls.html' %}
+
+<div style="margin-top: 32px;">
+    {% include 'partials/stats.html' %}
+</div>
+{% endblock %}

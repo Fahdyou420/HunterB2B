@@ -1,0 +1,31 @@
+services:
+  hunter_auto:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./config:/app/config
+      - playwright_sessions:/app/sessions
+      - ./logs:/app/logs
+    env_file:
+      - .env
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  playwright_sessions:
+  ollama_data:

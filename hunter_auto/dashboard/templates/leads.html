@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="header">
+    <h1>Leads Repository</h1>
+    <p>View and manage all gathered and enriched leads.</p>
+</div>
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>Company</th>
+                <th>Contact</th>
+                <th>Score</th>
+                <th>Source</th>
+                <th>Status</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lead in leads %}
+            <tr>
+                <td>
+                    <div style="font-weight: 500;">{{ lead.Company or 'Unknown' }}</div>
+                    <div class="sub-text">{{ lead.Sector or '' }}</div>
+                </td>
+                <td>
+                    <div>{{ lead.Name or '-' }}</div>
+                    <div class="sub-text">{{ lead.Title or '-' }}</div>
+                </td>
+                <td>{{ lead.Score or '-' }}</td>
+                <td class="sub-text">{{ lead.Source or '-' }}</td>
+                <td><span class="badge {{ lead.Status | lower }}">{{ lead.Status | title }}</span></td>
+                <td class="sub-text">{{ lead.get('Sent At', lead.get('timestamp', '')) or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 40px; color: #64748B;">
+                    <i data-lucide="folder-open" style="margin-bottom: 12px; width: 32px; height: 32px;"></i><br>
+                    No leads found yet. Start the scraper to see data here.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

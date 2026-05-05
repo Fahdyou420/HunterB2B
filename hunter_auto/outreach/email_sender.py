@@ -22,10 +22,11 @@ class EmailSender:
         msg["From"] = f"Ooredoo Business Team <{GMAIL_ADDRESS}>"
         msg["To"] = to_email
 
+        content_fr_html = content_fr.replace('\n', '<br>')
         html = f"""
         <html>
           <body style="font-family: Arial, sans-serif; color: #333;">
-            <p>{content_fr.replace('\n', '<br>')}</p>
+            <p>{content_fr_html}</p>
             <br>
             <p style="color: #E30613; font-weight: bold;">Équipe Ooredoo Business</p>
           </body>

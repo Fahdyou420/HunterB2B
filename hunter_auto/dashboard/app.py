@@ -88,16 +88,17 @@ def resume_scheduler():
 @app.route('/api/action/trigger_scrape', methods=['POST'])
 def trigger_scrape():
     from config.logger import logger
-    logger.info("Manual trigger: Google Maps Scrape")
+    logger.info("Manual trigger: Scraping Layer (Maps & LinkedIn)")
     threading.Thread(target=agent.scrape_job).start()
-    return jsonify({"success": True, "message": "Google Maps Scraping started"}), 200
+    return jsonify({"success": True, "message": "Scraping Layer started"}), 200
 
-@app.route('/api/action/trigger_linkedin', methods=['POST'])
-def trigger_linkedin():
+@app.route('/api/action/trigger_enrich', methods=['POST'])
+def trigger_enrich():
     from config.logger import logger
-    logger.info("Manual trigger: LinkedIn Scrape")
-    threading.Thread(target=agent.enrich_job).start()
-    return jsonify({"success": True, "message": "LinkedIn Scraping started"}), 200
+    logger.info("Manual trigger: AI Enrichment Engine")
+    from ai.enrichment_engine import enrichment_engine
+    threading.Thread(target=enrichment_engine.process_pending_enrichment).start()
+    return jsonify({"success": True, "message": "AI Enrichment started"}), 200
 
 @app.route('/api/action/trigger_outreach', methods=['POST'])
 def trigger_outreach():

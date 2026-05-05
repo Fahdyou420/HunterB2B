@@ -53,6 +53,30 @@ class SheetsClient:
             pass
         return False
 
+    def update_lead_data(self, lead_id, updates):
+        if not self.leads_ws: return
+        from config.logger import logger
+        try:
+            records = self.leads_ws.get_all_records()
+            headers = self.leads_ws.row_values(1)
+            for idx, row in enumerate(records, start=2):
+                if str(row.get('ID')) == str(lead_id):
+                    for key, val in updates.items():
+                        if key in headers:
+                            col_idx = headers.index(key) + 1
+                            self.leads_ws.update_cell(idx, col_idx, str(val))
+                    break
+        except Exception as e:
+            logger.error(f"Failed to update lead data for {lead_id}: {e}")
+
+    def get_pending_enrichment_leads(self):
+        if not self.leads_ws: return []
+        try:
+            records = self.leads_ws.get_all_records()
+            return [r for r in records if str(r.get('Status', '')).lower() == 'pending_enrichment']
+        except:
+            return []
+
     def get_pending_leads(self):
         if not self.leads_ws: return []
         try:

@@ -44,17 +44,13 @@ class GoogleMapsScraper:
                                     "company": name,
                                     "source": "google_maps",
                                     "sector": sector,
-                                    "status": "pending_enrichment"
+                                    "status": "pending_enrichment",
+                                    "notes": f"WEBSITE: {website_url}" if website_url else ""
                                 }
-                                
-                                # Enrich immediately to get phone/emails
-                                enrichment = web_enricher.enrich_lead(name, website_url)
-                                lead["email"] = enrichment["emails"][0] if enrichment["emails"] else ""
-                                lead["phone"] = enrichment["phones"][0] if enrichment["phones"] else ""
                                 
                                 leads.append(lead)
                                 sheets_client.add_lead(lead)
-                                logger.info(f"Saved lead: {name} (Phone: {lead['phone']}, Email: {lead['email']})")
+                                logger.info(f"Saved raw lead: {name} to pipeline.")
                             else:
                                 logger.info(f"Lead {name} already exists. Skipping.")
                         except Exception as e:

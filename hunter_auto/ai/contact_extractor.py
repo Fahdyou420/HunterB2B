@@ -7,7 +7,9 @@ class ContactExtractor:
         Text:
         {raw_text}
         
-        Return a JSON with lists of emails, phone numbers (especially Tunisian format starting with +216 or 00216), and names.
+        Return ONLY a JSON object with keys "emails", "phones", and "names" as lists of strings. 
+        Focus especially on Tunisian phone formats (+216, 00216, or local 8-digit numbers).
+        Do not output any markdown formatting like ```json.
         """
         
         schema = {

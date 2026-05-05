@@ -20,9 +20,50 @@ def leads():
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
+    from config.settings import update_settings, OLLAMA_HOST, OLLAMA_MODEL, TARGET_SECTORS, TIMEZONE, SCRAPE_INTERVAL_HOURS, OUTREACH_DAILY_LIMIT
+    
+    success = False
     if request.method == 'POST':
-        pass # Save logic here
-    return render_template('settings.html', sectors=TARGET_SECTORS)
+        # Retrieve form data
+        selected_sectors = request.form.getlist('sectors')
+        custom_sectors_str = request.form.get('custom_sectors', '')
+        if custom_sectors_str.strip():
+            custom_sectors = [s.strip() for s in custom_sectors_str.split(',')]
+            selected_sectors.extend(custom_sectors)
+            
+        ollama_host = request.form.get('ollama_host', '').strip()
+        ollama_model = request.form.get('ollama_model', '').strip()
+        
+        timezone = request.form.get('timezone', '').strip()
+        scrape_interval = request.form.get('scrape_interval', '').strip()
+        outreach_limit = request.form.get('outreach_limit', '').strip()
+        
+        new_settings = {}
+        if selected_sectors: new_settings['TARGET_SECTORS'] = selected_sectors
+        if ollama_host: new_settings['OLLAMA_HOST'] = ollama_host
+        if ollama_model: new_settings['OLLAMA_MODEL'] = ollama_model
+        if timezone: new_settings['TIMEZONE'] = timezone
+        if scrape_interval: new_settings['SCRAPE_INTERVAL_HOURS'] = scrape_interval
+        if outreach_limit: new_settings['OUTREACH_DAILY_LIMIT'] = outreach_limit
+        
+        update_settings(new_settings)
+        agent.update_jobs()
+        success = True
+
+    # Build custom sectors string (those not in the default list)
+    default_sectors = ['Banque', 'Industrie', 'Commerce', 'IT', 'Télécom', 'Assurance', 'Transport', 'Santé']
+    current_custom_sectors = [s for s in TARGET_SECTORS if s not in default_sectors]
+    custom_sectors_str = ", ".join(current_custom_sectors)
+
+    return render_template('settings.html', 
+                            target_sectors=TARGET_SECTORS, 
+                            custom_sectors=custom_sectors_str,
+                            ollama_host=OLLAMA_HOST,
+                            ollama_model=OLLAMA_MODEL,
+                            timezone=TIMEZONE,
+                            scrape_interval=SCRAPE_INTERVAL_HOURS,
+                            outreach_limit=OUTREACH_DAILY_LIMIT,
+                            success=success)
 
 @app.route('/api/stats')
 def api_stats():
@@ -46,10 +87,44 @@ def resume_scheduler():
 
 @app.route('/api/action/trigger_scrape', methods=['POST'])
 def trigger_scrape():
+    from config.logger import logger
+    logger.info("Manual trigger: Google Maps Scrape")
     threading.Thread(target=agent.scrape_job).start()
-    return "Scraping started...", 200
+    return jsonify({"success": True, "message": "Google Maps Scraping started"}), 200
+
+@app.route('/api/action/trigger_linkedin', methods=['POST'])
+def trigger_linkedin():
+    from config.logger import logger
+    logger.info("Manual trigger: LinkedIn Scrape")
+    threading.Thread(target=agent.enrich_job).start()
+    return jsonify({"success": True, "message": "LinkedIn Scraping started"}), 200
 
 @app.route('/api/action/trigger_outreach', methods=['POST'])
 def trigger_outreach():
+    from config.logger import logger
+    logger.info("Manual trigger: Outreach")
     threading.Thread(target=agent.outreach_job).start()
-    return "Outreach started...", 200
+    return jsonify({"success": True, "message": "Outreach started"}), 200
+
+@app.route('/api/action/check_ai', methods=['POST'])
+def check_ai():
+    from ai.ollama_client import ollama_client
+    try:
+        response = ollama_client.generate("Say 'AI is ready'", retries=1)
+        if response:
+            return jsonify({"success": True, "message": "Ollama connection successful!"}), 200
+        else:
+            return jsonify({"success": False, "message": "Connected but failed to generate text."}), 500
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Connection failed: {str(e)}"}), 500
+
+@app.route('/logs')
+def show_logs():
+    return render_template('logs.html')
+
+@app.route('/api/logs_stream')
+def logs_stream():
+    from config.logger import get_recent_logs
+    logs = get_recent_logs(100)
+    return logs
+

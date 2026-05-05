@@ -2,10 +2,12 @@ import time
 import random
 from playwright.sync_api import sync_playwright
 from database.sheets_client import sheets_client
+from config.logger import logger
+from scrapers.web_enricher import web_enricher
 
 class GoogleMapsScraper:
     def scrape_by_sector(self, sector):
-        print(f"Starting Google Maps scrape for sector: {sector}")
+        logger.info(f"Starting Google Maps scrape for sector: {sector}")
         queries = [f"entreprises {sector} Tunisie", f"{sector} Tunis"]
         
         leads = []
@@ -16,6 +18,7 @@ class GoogleMapsScraper:
             
             for query in queries:
                 try:
+                    logger.info(f"Navigating to maps search: {query}")
                     page.goto(f"https://www.google.com/maps/search/{query.replace(' ', '+')}")
                     time.sleep(random.uniform(3, 8))
                     
@@ -25,10 +28,15 @@ class GoogleMapsScraper:
                         pass
                     
                     elements = page.locator(".Nv2PK").all()
+                    logger.info(f"Found {len(elements[:10])} results for {query}")
+                    
                     for el in elements[:10]:
                         try:
-                            # Basic extraction
                             name = el.locator(".qBF1Pd").inner_text() if el.locator(".qBF1Pd").count() > 0 else "Unknown"
+                            website_el = el.locator("a[href^='http']").first
+                            website_url = website_el.get_attribute("href") if website_el else None
+                            
+                            logger.info(f"Processing Maps lead: {name}")
                             
                             if not sheets_client.lead_exists(phone=name):
                                 lead = {
@@ -36,18 +44,27 @@ class GoogleMapsScraper:
                                     "company": name,
                                     "source": "google_maps",
                                     "sector": sector,
-                                    "status": "pending"
+                                    "status": "pending_enrichment"
                                 }
+                                
+                                # Enrich immediately to get phone/emails
+                                enrichment = web_enricher.enrich_lead(name, website_url)
+                                lead["email"] = enrichment["emails"][0] if enrichment["emails"] else ""
+                                lead["phone"] = enrichment["phones"][0] if enrichment["phones"] else ""
+                                
                                 leads.append(lead)
                                 sheets_client.add_lead(lead)
+                                logger.info(f"Saved lead: {name} (Phone: {lead['phone']}, Email: {lead['email']})")
+                            else:
+                                logger.info(f"Lead {name} already exists. Skipping.")
                         except Exception as e:
-                            print(f"Error extracting gm element: {e}")
+                            logger.error(f"Error extracting gm element: {e}")
                 except Exception as e:
-                    print(f"Page load error: {e}")
+                    logger.error(f"Page load error for {query}: {e}")
                     
             browser.close()
             
-        print(f"Finished Google Maps scrape for {sector}. Found {len(leads)} leads.")
+        logger.info(f"Finished Google Maps scrape for {sector}. Found {len(leads)} leads.")
         return leads
 
 google_maps_scraper = GoogleMapsScraper()

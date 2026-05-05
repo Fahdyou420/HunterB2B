@@ -1,7 +1,9 @@
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key
 
 load_dotenv()
+
+ENV_PATH = os.path.join(os.path.dirname(__file__), '..', '.env')
 
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
@@ -24,3 +26,25 @@ TARGET_SECTORS = [s.strip() for s in os.getenv("TARGET_SECTORS", "Banque,Industr
 OUTREACH_DAILY_LIMIT = int(os.getenv("OUTREACH_DAILY_LIMIT", "15"))
 SCRAPE_INTERVAL_HOURS = int(os.getenv("SCRAPE_INTERVAL_HOURS", "2"))
 TIMEZONE = os.getenv("TIMEZONE", "Africa/Tunis")
+
+def update_settings(new_settings):
+    global OLLAMA_HOST, OLLAMA_MODEL, TARGET_SECTORS, OUTREACH_DAILY_LIMIT, SCRAPE_INTERVAL_HOURS, TIMEZONE
+    
+    if "OLLAMA_HOST" in new_settings:
+        OLLAMA_HOST = new_settings["OLLAMA_HOST"]
+        set_key(ENV_PATH, "OLLAMA_HOST", OLLAMA_HOST)
+    if "OLLAMA_MODEL" in new_settings:
+        OLLAMA_MODEL = new_settings["OLLAMA_MODEL"]
+        set_key(ENV_PATH, "OLLAMA_MODEL", OLLAMA_MODEL)
+    if "TARGET_SECTORS" in new_settings:
+        TARGET_SECTORS = new_settings["TARGET_SECTORS"]
+        set_key(ENV_PATH, "TARGET_SECTORS", ",".join(TARGET_SECTORS))
+    if "OUTREACH_DAILY_LIMIT" in new_settings:
+        OUTREACH_DAILY_LIMIT = int(new_settings["OUTREACH_DAILY_LIMIT"])
+        set_key(ENV_PATH, "OUTREACH_DAILY_LIMIT", str(OUTREACH_DAILY_LIMIT))
+    if "SCRAPE_INTERVAL_HOURS" in new_settings:
+        SCRAPE_INTERVAL_HOURS = int(new_settings["SCRAPE_INTERVAL_HOURS"])
+        set_key(ENV_PATH, "SCRAPE_INTERVAL_HOURS", str(SCRAPE_INTERVAL_HOURS))
+    if "TIMEZONE" in new_settings:
+        TIMEZONE = new_settings["TIMEZONE"]
+        set_key(ENV_PATH, "TIMEZONE", TIMEZONE)

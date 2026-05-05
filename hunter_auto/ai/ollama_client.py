@@ -1,19 +1,17 @@
 import requests
 import json
 import time
-from config.settings import OLLAMA_HOST, OLLAMA_MODEL
+import config.settings as app_settings
 import os
 
 class OllamaClient:
     def __init__(self):
-        self.base_url = OLLAMA_HOST
-        self.model = OLLAMA_MODEL
         os.makedirs("logs", exist_ok=True)
 
     def generate(self, prompt, retries=3):
-        url = f"{self.base_url}/api/generate"
+        url = f"{app_settings.OLLAMA_HOST}/api/generate"
         payload = {
-            "model": self.model,
+            "model": app_settings.OLLAMA_MODEL,
             "prompt": prompt,
             "stream": False
         }
@@ -30,21 +28,34 @@ class OllamaClient:
                 time.sleep(2)
         return ""
 
-    def generate_json(self, prompt, schema=None):
+    def generate_json(self, prompt, schema=None, default_return=None):
         modified_prompt = prompt + "\n\nYou MUST return a valid JSON object matching this schema or structure. No markdown blocks, just raw JSON."
         if schema:
             modified_prompt += f"\nSchema: {json.dumps(schema)}"
         
         response_text = self.generate(modified_prompt)
         try:
+            # Clean up the response to isolate the JSON
+            cleaned = response_text.strip()
+            if cleaned.startswith("```json"):
+                cleaned = cleaned[7:]
+            elif cleaned.startswith("```"):
+                cleaned = cleaned[3:]
+                
+            if cleaned.endswith("```"):
+                cleaned = cleaned[:-3]
+                
+            # Fallback if there's text before/after the backticks
             if "```json" in response_text:
-                response_text = response_text.split("```json")[-1].split("```")[0].strip()
+                cleaned = response_text.split("```json", 1)[1].split("```", 1)[0].strip()
             elif "```" in response_text:
-                response_text = response_text.split("```")[-1].split("```")[0].strip()
-            return json.loads(response_text)
+                cleaned = response_text.split("```", 1)[1].split("```", 1)[0].strip()
+                
+            return json.loads(cleaned)
         except json.JSONDecodeError as e:
-            print(f"Failed to parse JSON from Ollama: {e}")
-            return {}
+            from config.logger import logger
+            logger.error(f"Failed to parse JSON from Ollama: {e}\nRaw output: {response_text}")
+            return default_return if default_return is not None else {}
 
     def _log_call(self, prompt, response):
         try:

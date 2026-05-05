@@ -4,6 +4,7 @@ import os
 from playwright.sync_api import sync_playwright
 from config.settings import LINKEDIN_EMAIL, LINKEDIN_PASSWORD
 from database.sheets_client import sheets_client
+from config.logger import logger
 
 class LinkedinScraper:
     def __init__(self):
@@ -11,6 +12,7 @@ class LinkedinScraper:
         os.makedirs(self.session_dir, exist_ok=True)
         
     def _login(self, page):
+        logger.info("Logging into LinkedIn...")
         page.goto("https://www.linkedin.com/login")
         time.sleep(random.uniform(2, 4))
         if page.locator("input#username").count() > 0:
@@ -20,9 +22,10 @@ class LinkedinScraper:
             page.click("button[type='submit']")
             page.wait_for_load_state("networkidle")
             time.sleep(3)
+        logger.info("LinkedIn login complete")
         
     def scrape_decision_makers(self, sector):
-        print(f"Scraping LinkedIn for {sector}")
+        logger.info(f"Scraping LinkedIn for {sector}")
         queries = [f"directeur {sector} Tunisie", f"CEO {sector} Tunisie"]
         leads = []
         
@@ -38,6 +41,7 @@ class LinkedinScraper:
                     context.storage_state(path=self.session_dir+"/state.json")
                 
                 for query in queries:
+                    logger.info(f"Searching LinkedIn: {query}")
                     search_url = f"https://www.linkedin.com/search/results/people/?keywords={query.replace(' ', '%20')}"
                     page.goto(search_url)
                     time.sleep(random.uniform(4, 7))
@@ -50,6 +54,7 @@ class LinkedinScraper:
                             url = "https://www.linkedin.com" + name_el.get_attribute("href").split('?')[0]
                             title = res.locator(".entity-result__primary-subtitle").inner_text() if res.locator(".entity-result__primary-subtitle").count() > 0 else ""
                             
+                            logger.info(f"Processing LI lead: {name}")
                             if not sheets_client.lead_exists(linkedin_url=url):
                                 lead = {
                                     "id": f"li_{str(random.randint(100000, 999999))}",
@@ -59,16 +64,21 @@ class LinkedinScraper:
                                     "linkedin_url": url,
                                     "source": "linkedin",
                                     "sector": sector,
-                                    "status": "pending"
+                                    "status": "pending_enrichment"
                                 }
                                 leads.append(lead)
                                 sheets_client.add_lead(lead)
+                                logger.info(f"Saved LinkedIn lead: {name}")
+                            else:
+                                logger.info(f"Lead {name} already exists.")
                         except Exception as e:
-                            print("Error extracting LI lead:", e)
+                            logger.error(f"Error extracting LI lead: {e}")
             except Exception as e:
-                print(f"Linkedin scraper error: {e}")
+                logger.error(f"Linkedin scraper error: {e}")
             finally:
                 browser.close()
+                
+        logger.info(f"Finished LinkedIn scrape for {sector}. Found {len(leads)} leads.")
         return leads
         
     def _has_state(self):

@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="header" style="margin-bottom: 24px;">
+    <h1>System Logs</h1>
+    <p>Real-time execution logs from the Hunter Auto agent.</p>
+</div>
+
+<div class="settings-card" style="padding: 0; background: #0F172A; border: none; border-radius: 12px; overflow: hidden; height: 600px; display: flex; flex-direction: column;">
+    <div style="background: #1E293B; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155;">
+        <span style="color: #94A3B8; font-family: monospace; font-size: 13px;">
+            <i data-lucide="terminal" size="14" style="vertical-align: text-bottom; margin-right: 4px;"></i> app.log
+        </span>
+        <div style="display: flex; gap: 8px;">
+            <div style="width: 12px; height: 12px; border-radius: 50%; background: #EF4444;"></div>
+            <div style="width: 12px; height: 12px; border-radius: 50%; background: #F59E0B;"></div>
+            <div style="width: 12px; height: 12px; border-radius: 50%; background: #10B981;"></div>
+        </div>
+    </div>
+    <div id="log-container" 
+         hx-get="/api/logs_stream" 
+         hx-trigger="every 2s" 
+         hx-swap="innerHTML"
+         style="padding: 20px; font-family: 'JetBrains Mono', 'Fira Code', monospace; color: #10B981; font-size: 13px; flex-grow: 1; overflow-y: auto; white-space: pre-wrap; line-height: 1.5;">
+        Loading logs...
+    </div>
+</div>
+
+<script>
+    // Auto-scroll logic for logs
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        if(evt.detail.target.id === 'log-container') {
+            const container = document.getElementById('log-container');
+            // Only auto-scroll if user is already near bottom, to not interrupt reading
+            const isScrolledToBottom = container.scrollHeight - container.clientHeight <= container.scrollTop + 50;
+            if(isScrolledToBottom) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+    });
+
+    // Initial scroll
+    setTimeout(() => {
+        const c = document.getElementById('log-container');
+        if(c) c.scrollTop = c.scrollHeight;
+    }, 500);
+</script>
+{% endblock %}

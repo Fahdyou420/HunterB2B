@@ -2,22 +2,108 @@
 {% block content %}
 <div class="header">
     <h1>System Settings</h1>
-    <p>Configure agent parameters and targeting.</p>
+    <p>Configure agent parameters, target sectors, and AI connections.</p>
 </div>
-<div class="settings-card">
-    <form method="POST">
-        <h3>Target Sectors</h3>
-        <p style="color: #64748B; font-size: 14px; margin-bottom: 20px;">
-            Select which sectors the Hunter Auto agent should focus on in the Tunisian market.
-        </p>
-        <div class="checkbox-group">
-            {% for sector in sectors %}
-            <label><input type="checkbox" name="sectors" value="{{ sector }}" checked> {{ sector }}</label>
-            {% endfor %}
+
+{% if success %}
+<div style="background-color: #D1FAE5; color: #059669; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+    <i data-lucide="check-circle" size="18"></i> Settings saved successfully.
+</div>
+{% endif %}
+
+<form method="POST">
+    <div style="display: grid; gap: 24px;">
+        
+        <!-- Target Sectors -->
+        <div class="settings-card">
+            <h3>Target Sectors</h3>
+            <p style="color: #64748B; font-size: 14px; margin-bottom: 20px;">
+                Select or add sectors the Hunter Auto agent should focus on in the Tunisian market.
+            </p>
+            <div class="checkbox-group">
+                {% set available_sectors = ['Banque', 'Industrie', 'Commerce', 'IT', 'Télécom', 'Assurance', 'Transport', 'Santé'] %}
+                {% for sector in available_sectors %}
+                <label>
+                    <input type="checkbox" name="sectors" value="{{ sector }}" {% if sector in target_sectors %}checked{% endif %}> {{ sector }}
+                </label>
+                {% endfor %}
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <label style="font-size: 14px; font-weight: 500; display: block; margin-bottom: 8px;">Custom Sectors (comma separated)</label>
+                <input type="text" name="custom_sectors" placeholder="e.g. Immobilier, Agriculture" class="form-input" value="{{ custom_sectors }}">
+            </div>
         </div>
-        <div style="display: flex; gap: 12px; border-top: 1px solid #E2E8F0; padding-top: 24px;">
+
+        <!-- AI Connection -->
+        <div class="settings-card">
+            <h3>AI Connection (Ollama)</h3>
+            <p style="color: #64748B; font-size: 14px; margin-bottom: 20px;">
+                Configure the local (or remote) Ollama instance used for AI tasks.
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <label class="form-label">Ollama Host URL</label>
+                    <input type="text" name="ollama_host" class="form-input" value="{{ ollama_host }}" placeholder="http://host.docker.internal:11434">
+                </div>
+                <div>
+                    <label class="form-label">Model Name</label>
+                    <input type="text" name="ollama_model" class="form-input" value="{{ ollama_model }}" placeholder="qwen2.5:7b">
+                </div>
+            </div>
+            <div style="margin-top: 15px; font-size: 13px; color: #64748B; background: #F8FAFC; padding: 12px; border-radius: 6px; border: 1px solid #E2E8F0;">
+                <i data-lucide="info" size="14" style="vertical-align: middle; margin-right: 4px;"></i> 
+                If Ollama is running on your host machine, use <strong>http://host.docker.internal:11434</strong> when running from Docker.
+            </div>
+        </div>
+
+        <!-- Automation Rules -->
+        <div class="settings-card">
+            <h3>Automation Rules</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <label class="form-label">Timezone</label>
+                    <input type="text" name="timezone" class="form-input" value="{{ timezone }}" placeholder="Africa/Tunis">
+                </div>
+                <div>
+                    <label class="form-label">Scrape Interval (Hours)</label>
+                    <input type="number" name="scrape_interval" class="form-input" value="{{ scrape_interval }}" min="1" max="72">
+                </div>
+                <div>
+                    <label class="form-label">Daily Outreach Limit (Messages)</label>
+                    <input type="number" name="outreach_limit" class="form-input" value="{{ outreach_limit }}" min="1">
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="settings-card" style="display: flex; justify-content: flex-end; padding: 20px 24px;">
             <button type="submit" class="btn"><i data-lucide="save"></i> Save Configuration</button>
         </div>
-    </form>
-</div>
+    </div>
+</form>
+
+<style>
+.form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--text);
+}
+.form-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(227, 6, 19, 0.1);
+}
+</style>
 {% endblock %}

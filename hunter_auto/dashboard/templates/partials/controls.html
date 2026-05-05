@@ -31,6 +31,9 @@
                 <label style="font-size: 12px; color: #475569;">Target Sector:</label>
                 <input type="text" name="sector" value="IT" style="padding: 6px; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 4px;" required>
                 
+                <label style="font-size: 12px; color: #475569;">City / Governorate:</label>
+                <input type="text" name="city" value="Tunis" style="padding: 6px; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 4px;" required>
+                
                 <label style="font-size: 12px; color: #475569;">Limit per source:</label>
                 <input type="number" name="limit" value="10" min="1" max="50" style="padding: 6px; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 4px;" required>
                 
@@ -57,9 +60,9 @@
 
         <!-- Layer 3 -->
         <div style="background: #FFF7ED; border: 1px dashed #FFEDD5; padding: 16px; border-radius: 8px; text-align: center;">
-            <div style="color: #C2410C; font-size: 12px; text-transform: uppercase; font-weight: 600; margin-bottom: 8px;">3. Outreach Engine</div>
-            <button class="btn" style="width: 100%; justify-content: center; background: #FFEDD5; border: 1px solid #FDBA74; color: #C2410C;" hx-post="/api/action/trigger_outreach" hx-swap="none" onclick="alert('Outreach Router started. Check logs.')">
-                <i data-lucide="send" size="16"></i> Start Outreach
+            <div style="color: #C2410C; font-size: 12px; text-transform: uppercase; font-weight: 600; margin-bottom: 8px;">3. Cold Call Matchmaker</div>
+            <button class="btn" style="width: 100%; justify-content: center; background: #FFEDD5; border: 1px solid #FDBA74; color: #C2410C;" hx-post="/api/action/trigger_outreach" hx-swap="none" onclick="alert('Cold Call Matchmaker started. Check logs.')">
+                <i data-lucide="phone-call" size="16"></i> Prepare Call Queue
             </button>
         </div>
     </div>

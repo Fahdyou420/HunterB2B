@@ -7,12 +7,16 @@ class EnrichmentEngine:
     def process_pending_enrichment(self):
         logger.info("[Layer 2] Starting AI Enrichment & Scoring Engine...")
         leads = sheets_client.get_pending_enrichment_leads()
+        skipped_leads = sheets_client.get_skipped_leads()
         
-        if not leads:
+        # combine lists but limit skipped leads to avoid huge loops on old leads
+        all_leads = leads + skipped_leads[:20]
+        
+        if not all_leads:
             logger.info("No leads pending enrichment.")
             return
 
-        for lead in leads:
+        for lead in all_leads:
             lead_id = lead.get('ID')
             company = lead.get('Company', 'Unknown')
             notes = str(lead.get('Notes', ''))
@@ -28,13 +32,17 @@ class EnrichmentEngine:
             
             # 1. Extract contacts if missing
             if not email and not phone:
-                if website:
-                    enrich_res = web_enricher.enrich_lead(company, website)
-                    if enrich_res.get('emails') and not email:
-                        email = enrich_res['emails'][0]
-                    if enrich_res.get('phones') and not phone:
-                        phone = enrich_res['phones'][0]
-            
+                enrich_res = web_enricher.enrich_lead(company, website)
+                if enrich_res.get('emails') and not email:
+                    email = enrich_res['emails'][0]
+                if enrich_res.get('phones') and not phone:
+                    phone = enrich_res['phones'][0]
+
+            if lead.get('Status') == 'skipped' and not phone:
+                logger.info(f"Still no phone found for {company} after deep search. Marking as dead.")
+                sheets_client.update_lead_status(lead_id, "dead", "No phone found after deep search")
+                continue
+
             # 2. AI Scoring
             logger.info(f"Scoring lead via Ollama: {company}")
             score, reason = lead_scorer.score_lead({"company": company, "title": lead.get('Title', '')})

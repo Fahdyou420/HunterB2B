@@ -1,43 +1,32 @@
 from database.sheets_client import sheets_client
-from outreach.telegram_notifier import telegram_notifier
-from outreach.email_sender import email_sender
-from outreach.linkedin_messenger import linkedin_messenger
 from config.logger import logger
 
 class OutreachRouter:
-    def process_pending_leads(self, batch_size=10):
-        logger.info("[Routing Engine] Starting Contact Router...")
+    def process_pending_leads(self, batch_size=50):
+        logger.info("[Routing Engine] Starting Cold Call MatchMaker...")
         leads = sheets_client.get_pending_leads()
-        logger.info(f"Found {len(leads)} pending leads ready for outreach.")
+        logger.info(f"Found {len(leads)} pending leads ready for cold calling.")
         
         for lead in leads[:batch_size]:
-            logger.info(f"Routing logic for lead ID: {lead.get('ID')} ({lead.get('Company')})")
+            logger.info(f"Evaluating lead ID: {lead.get('ID')} ({lead.get('Company')})")
             lead_id = lead.get('ID')
             phone = str(lead.get('Phone', '')).strip()
-            email = str(lead.get('Email', '')).strip()
-            li_url = str(lead.get('LinkedIn URL', '')).strip()
+            score = lead.get('Score', 0)
+            try:
+                score = int(score)
+            except:
+                score = 0
             
             try:
-                if phone:
-                    logger.info("-> Path: Phone found -> Human Handoff (Telegram)")
-                    telegram_notifier.notify_lead(lead)
-                    sheets_client.update_lead_status(lead_id, "phone_handoff")
-                elif email:
-                    logger.info("-> Path: Email found -> Automated Email Sequence")
-                    success = email_sender.send_email(lead)
-                    if success:
-                        if li_url:
-                            logger.info("   -> Bonus: LinkedIn URL found -> Automated LI Message")
-                            linkedin_messenger.send_message(lead)
-                        sheets_client.update_lead_status(lead_id, "email_sent")
-                elif li_url:
-                    logger.info("-> Path: LinkedIn Only -> Automated LI Sequence")
-                    success = linkedin_messenger.send_message(lead)
-                    if success:
-                        sheets_client.update_lead_status(lead_id, "linkedin_sent")
+                if phone and score >= 7:
+                    logger.info("-> Path: High Score + Phone found -> Cold Call Queue")
+                    sheets_client.update_lead_status(lead_id, "cold_call_queue", "High priority for human cold calling")
+                elif phone:
+                    logger.info("-> Path: Low Score + Phone -> Secondary Queue")
+                    sheets_client.update_lead_status(lead_id, "secondary_call_queue", "Medium priority cold calling")
                 else:
-                    logger.info("-> Path: Dead End -> Skipped")
-                    sheets_client.update_lead_status(lead_id, "skipped", "No contact info found")
+                    logger.info("-> Path: No Phone -> Missing Info")
+                    sheets_client.update_lead_status(lead_id, "skipped", "No phone found for cold calling")
             except Exception as e:
                 logger.error(f"Error processing lead {lead_id}: {e}")
 

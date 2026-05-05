@@ -24,9 +24,9 @@ class LinkedinScraper:
             time.sleep(3)
         logger.info("LinkedIn login complete")
         
-    def scrape_decision_makers(self, sector, limit=10):
-        logger.info(f"Scraping LinkedIn for {sector} with target {limit} leads")
-        queries = [f"directeur {sector} Tunisie", f"CEO {sector} Tunisie"]
+    def scrape_decision_makers(self, sector, limit=10, sync_mode=False, city='Tunis'):
+        logger.info(f"Scraping LinkedIn for {sector} in {city} with target {limit} leads")
+        queries = [f"directeur {sector} {city}", f"CEO {sector} {city}"]
         leads = []
         
         with sync_playwright() as p:
@@ -60,7 +60,7 @@ class LinkedinScraper:
                                 title = res.locator(".entity-result__primary-subtitle").inner_text() if res.locator(".entity-result__primary-subtitle").count() > 0 else ""
                                 
                                 logger.info(f"Processing LI lead: {name}")
-                                if not sheets_client.lead_exists(linkedin_url=url):
+                                if not sheets_client.lead_exists(linkedin_url=url) or sync_mode:
                                     lead = {
                                         "id": f"li_{str(random.randint(100000, 999999))}",
                                         "name": name,
@@ -73,7 +73,8 @@ class LinkedinScraper:
                                         "notes": ""
                                     }
                                     leads.append(lead)
-                                    sheets_client.add_lead(lead)
+                                    if not sync_mode:
+                                        sheets_client.add_lead(lead)
                                     logger.info(f"Saved LinkedIn lead: {name}")
                                 else:
                                     logger.info(f"Lead {name} already exists.")

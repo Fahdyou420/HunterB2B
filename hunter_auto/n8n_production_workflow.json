@@ -1,0 +1,287 @@
+{
+  "meta": {
+    "instanceId": "hunter-auto-production"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days"
+            }
+          ]
+        }
+      },
+      "id": "908aa346-630e-4ebd-a3c3-652f1b0a8862",
+      "name": "Daily Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        220,
+        340
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "e2ba3473-b3c6-4318-87e0-bc47101ef1ff",
+      "name": "Test Manually",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        220,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "sector",
+              "value": "IT"
+            },
+            {
+              "name": "source",
+              "value": "maps"
+            }
+          ],
+          "number": [
+            {
+              "name": "limit",
+              "value": 10
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "19bda662-8418-4a5c-89b5-4df3b8ab0ff7",
+      "name": "Set Campaign Target",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        460,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://hunter_auto:5000/api/n8n/scrape",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"sector\": \"{{ $json.sector }}\",\n  \"limit\": {{ $json.limit }},\n  \"source\": \"{{ $json.source }}\"\n}",
+        "options": {}
+      },
+      "id": "7dcfa1db-8c7e-402a-bf3b-a9a3b9f3fe2b",
+      "name": "HunterAuto - Run Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        680,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "leads",
+        "options": {}
+      },
+      "id": "a50c8fc0-70f2-49cc-8cf3-57538a3d5483",
+      "name": "Split Leads Array",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 1,
+      "position": [
+        900,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID_HERE",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "name"
+        },
+        "dataMode": "defineBelow",
+        "columnToMatchOn": "ID",
+        "valueToMatchOn": "={{ $json.id }}",
+        "valuesToSend": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $json.id }}",
+            "Company": "={{ $json.company }}",
+            "Name": "={{ $json.name }}",
+            "LinkedIn URL": "={{ $json.linkedin_url }}",
+            "Phone": "={{ $json.phone }}",
+            "Email": "={{ $json.email }}",
+            "Source": "={{ $json.source }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "fb009be1-0816-43b9-a292-803ca85ff0ec",
+      "name": "Google Sheets - Add Lead",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.email }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "c1356e7e-3ce3-4b68-b7eb-d06941838612",
+      "name": "Lead Has Email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://hunter_auto:5000/api/n8n/ai_message",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"lead\": {\n    \"company\": \"{{ $json.company }}\",\n    \"sector\": \"{{ $('Set Campaign Target').item.json.sector }}\",\n    \"name\": \"{{ $json.name }}\"\n  }\n}",
+        "options": {}
+      },
+      "id": "e2ba3473-b3c6-4318-87e0-bc47101ef1g1",
+      "name": "HunterAuto - Generate Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "fromEmail": "YOUR_EMAIL@gmail.com",
+        "recipient": "={{ $('Lead Has Email?').item.json.email }}",
+        "subject": "={{ $json.message.split('\\n')[0] || 'Partnership with ' + $('Lead Has Email?').item.json.company }}",
+        "message": "={{ $json.message }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "e2ba3473-b3c6-4318-87e0-bc47101ef1h2",
+      "name": "Gmail - Send Outreach",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        180
+      ]
+    }
+  ],
+  "connections": {
+    "Daily Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Campaign Target",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Manually": {
+      "main": [
+        [
+          {
+            "node": "Set Campaign Target",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Campaign Target": {
+      "main": [
+        [
+          {
+            "node": "HunterAuto - Run Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HunterAuto - Run Scraper": {
+      "main": [
+        [
+          {
+            "node": "Split Leads Array",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Leads Array": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Add Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Add Lead": {
+      "main": [
+        [
+          {
+            "node": "Lead Has Email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Has Email?": {
+      "main": [
+        [
+          {
+            "node": "HunterAuto - Generate Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HunterAuto - Generate Message": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Send Outreach",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

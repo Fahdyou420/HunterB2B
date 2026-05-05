@@ -10,5 +10,23 @@ services:
     env_file:
       - .env
 
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Africa/Tunis
+    volumes:
+      - n8n_data:/home/node/.n8n
+    command: /bin/sh -c "n8n start"
+    depends_on:
+      - hunter_auto
+
 volumes:
   playwright_sessions:
+  n8n_data:

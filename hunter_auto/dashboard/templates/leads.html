@@ -9,11 +9,11 @@
         <thead>
             <tr>
                 <th>Company</th>
-                <th>Contact</th>
-                <th>Score</th>
+                <th>Contact Name</th>
+                <th>Phone / Email</th>
+                <th>AI Score</th>
                 <th>Source</th>
                 <th>Status</th>
-                <th>Timestamp</th>
             </tr>
         </thead>
         <tbody>
@@ -24,13 +24,24 @@
                     <div class="sub-text">{{ lead.Sector or '' }}</div>
                 </td>
                 <td>
-                    <div>{{ lead.Name or '-' }}</div>
+                    <div style="font-weight: 500;">{{ lead.Name or '-' }}</div>
                     <div class="sub-text">{{ lead.Title or '-' }}</div>
                 </td>
-                <td>{{ lead.Score or '-' }}</td>
+                <td>
+                    <div style="font-weight: 600; color: #1e293b;">{{ lead.Phone or '-' }}</div>
+                    <div class="sub-text">{{ lead.Email or '-' }}</div>
+                </td>
+                <td>
+                    {% if lead.Score %}
+                        <div style="font-weight: bold; color: {{ '#10B981' if (lead.Score|int) >= 7 else '#F59E0B' }};">
+                            {{ lead.Score }}/10
+                        </div>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
                 <td class="sub-text">{{ lead.Source or '-' }}</td>
                 <td><span class="badge {{ lead.Status | lower }}">{{ lead.Status | title }}</span></td>
-                <td class="sub-text">{{ lead.get('Sent At', lead.get('timestamp', '')) or '-' }}</td>
             </tr>
             {% else %}
             <tr>

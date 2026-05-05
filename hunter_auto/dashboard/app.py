@@ -92,16 +92,17 @@ def trigger_scrape():
     sector = request.form.get('sector', 'IT')
     limit = int(request.form.get('limit', 10))
     source = request.form.get('source', 'both')
+    city = request.form.get('city', 'Tunis')
     
-    logger.info(f"Manual trigger: Scraping Layer | Source: {source} | Sector: {sector} | Limit: {limit}")
+    logger.info(f"Manual trigger: Scraping Layer | Source: {source} | Sector: {sector} | City: {city} | Limit: {limit}")
     
     def run_custom_scrape():
         if source in ['maps', 'both']:
             from scrapers.google_maps import google_maps_scraper
-            google_maps_scraper.scrape_by_sector(sector, limit=limit)
+            google_maps_scraper.scrape_by_sector(sector, limit=limit, city=city)
         if source in ['linkedin', 'both']:
             from scrapers.linkedin_scraper import linkedin_scraper
-            linkedin_scraper.scrape_decision_makers(sector, limit=limit)
+            linkedin_scraper.scrape_decision_makers(sector, limit=limit, city=city)
             
     threading.Thread(target=run_custom_scrape).start()
     return jsonify({"success": True, "message": f"Scraping started for {sector} on {source}"}), 200
@@ -133,9 +134,99 @@ def check_ai():
     except Exception as e:
         return jsonify({"success": False, "message": f"Connection failed: {str(e)}"}), 500
 
+@app.route('/api/n8n/scrape', methods=['POST'])
+def n8n_scrape():
+    # End point for N8N to trigger scrape and get results synchronously 
+    from config.logger import logger
+    
+    data = request.json or {}
+    sector = data.get('sector', 'IT')
+    limit = int(data.get('limit', 5))
+    source = data.get('source', 'maps') # maps, linkedin
+    city = data.get('city', 'Tunis')
+    
+    logger.info(f"N8N sync trigger: Scrape {source} for {sector} in {city}")
+    
+    leads = []
+    try:
+        if source == 'maps':
+            from scrapers.google_maps import google_maps_scraper
+            leads = google_maps_scraper.scrape_by_sector(sector, limit=limit, sync_mode=True, city=city)
+        elif source == 'linkedin':
+            from scrapers.linkedin_scraper import linkedin_scraper
+            leads = linkedin_scraper.scrape_decision_makers(sector, limit=limit, sync_mode=True, city=city)
+            
+        return jsonify({"success": True, "leads": leads}), 200
+    except Exception as e:
+        logger.error(f"N8N Scrape Error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/n8n/enrich', methods=['POST'])
+def n8n_enrich():
+    from config.logger import logger
+    from scrapers.web_enricher import web_enricher
+    data = request.json or {}
+    company = data.get("company", "")
+    website = data.get("website", "")
+    logger.info(f"N8N sync trigger: Enrich {company} ({website})")
+    
+    try:
+        res = web_enricher.enrich_lead(company, website)
+        return jsonify({"success": True, "data": res}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/n8n/ai_score', methods=['POST'])
+def n8n_ai_score():
+    from config.logger import logger
+    from ai.lead_scorer import lead_scorer
+    data = request.json or {}
+    logger.info(f"N8N sync trigger: AI Score")
+    try:
+        score_res = lead_scorer.score_lead(data.get("lead", data))
+        return jsonify({"success": True, "score": score_res}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/n8n/ai_message', methods=['POST'])
+def n8n_ai_message():
+    from config.logger import logger
+    from ai.message_generator import message_generator
+    data = request.json or {}
+    logger.info(f"N8N sync trigger: AI Message")
+    try:
+        msg = message_generator.generate_outreach_message(data.get("lead", data))
+        return jsonify({"success": True, "message": msg}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route('/logs')
 def show_logs():
     return render_template('logs.html')
+
+@app.route('/api/live_feed')
+def live_feed():
+    from config.logger import get_recent_logs
+    logs = get_recent_logs(15)
+    html_lines = []
+    for line in logs.split('\n'):
+        if not line.strip(): continue
+        color = "#334155" # Default gray
+        if "ERROR" in line:
+            color = "#EF4444" # red
+        elif "INFO" in line:
+            color = "#0284C7" # blue
+        
+        escaped = line.strip().replace('<', '&lt;').replace('>', '&gt;')
+        
+        # if the step has an arrow, make it pop out
+        if "-&gt;" in escaped or "->" in escaped:
+            escaped = f"<strong>{escaped}</strong>"
+            color = "#059669" # green
+            
+        html_lines.append(f"<div style='color: {color}; margin-bottom: 6px; font-family: monospace; font-size: 13px; border-bottom: 1px solid #F1F5F9; padding-bottom: 4px;'>{escaped}</div>")
+        
+    return "".join(html_lines)
 
 @app.route('/api/logs_stream')
 def logs_stream():

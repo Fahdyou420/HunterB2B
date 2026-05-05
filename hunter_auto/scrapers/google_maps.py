@@ -6,9 +6,9 @@ from config.logger import logger
 from scrapers.web_enricher import web_enricher
 
 class GoogleMapsScraper:
-    def scrape_by_sector(self, sector, limit=10):
-        logger.info(f"Starting Google Maps scrape for sector: {sector} with limit: {limit}")
-        queries = [f"entreprises {sector} Tunisie", f"{sector} Tunis"]
+    def scrape_by_sector(self, sector, limit=10, sync_mode=False, city='Tunis'):
+        logger.info(f"Starting Google Maps scrape for sector: {sector} in {city} with limit: {limit}")
+        queries = [f"entreprises {sector} {city}", f"{sector} {city}"]
         
         leads = []
         with sync_playwright() as p:
@@ -57,7 +57,7 @@ class GoogleMapsScraper:
                             
                             logger.info(f"Processing Maps lead: {name}")
                             
-                            if not sheets_client.lead_exists(phone=name):
+                            if not sheets_client.lead_exists(phone=name) or sync_mode:
                                 lead = {
                                     "id": f"gm_{str(random.randint(100000, 999999))}",
                                     "name": "",
@@ -78,7 +78,8 @@ class GoogleMapsScraper:
                                     lead["phone"] = enrichment["phones"][0] if enrichment.get("phones") else ""
                                     
                                     leads.append(lead)
-                                    sheets_client.add_lead(lead)
+                                    if not sync_mode:
+                                        sheets_client.add_lead(lead)
                                     logger.info(f"Saved lead: {name} to pipeline (found contacts).")
                                 else:
                                     logger.info(f"Skipping lead {name} - No contact options (email/phone) found.")

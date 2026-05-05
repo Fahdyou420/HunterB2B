@@ -8,23 +8,23 @@
     </div>
     <div class="stat-card">
         <div class="header-row">
-            <h3>Sent Today</h3>
-            <div class="icon"><i data-lucide="send" size="18"></i></div>
+            <h3>High Score (7+)</h3>
+            <div class="icon"><i data-lucide="star" size="18"></i></div>
         </div>
-        <div class="value">{{ stats.sent }}</div>
+        <div class="value">{{ stats.high_score }}</div>
     </div>
     <div class="stat-card">
         <div class="header-row">
-            <h3>Response Rate</h3>
-            <div class="icon"><i data-lucide="bar-chart-2" size="18"></i></div>
+            <h3>Ready to Call</h3>
+            <div class="icon"><i data-lucide="phone-call" size="18"></i></div>
         </div>
-        <div class="value">{{ stats.response_rate }}</div>
+        <div class="value">{{ stats.cold_call_queue }}</div>
     </div>
     <div class="stat-card">
         <div class="header-row">
-            <h3>Meetings Booked</h3>
-            <div class="icon"><i data-lucide="calendar-check" size="18"></i></div>
+            <h3>Skipped (No Phone)</h3>
+            <div class="icon"><i data-lucide="x-circle" size="18"></i></div>
         </div>
-        <div class="value">{{ stats.meetings }}</div>
+        <div class="value">{{ stats.skipped }}</div>
     </div>
 </div>

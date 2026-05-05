@@ -94,6 +94,16 @@ class SheetsClient:
             logger.error(f"Error in get_pending_enrichment_leads: {e}")
             return []
 
+    def get_skipped_leads(self):
+        if not self.leads_ws: return []
+        try:
+            records = self._safe_get_all_records()
+            return [r for r in records if str(r.get('Status', '')).lower() == 'skipped']
+        except Exception as e:
+            from config.logger import logger
+            logger.error(f"Error in get_skipped_leads: {e}")
+            return []
+
     def get_pending_leads(self):
         if not self.leads_ws: return []
         try:
@@ -128,15 +138,22 @@ class SheetsClient:
             pass
                 
     def get_stats(self):
-        if not self.leads_ws: return {"total": 0, "sent": 0, "meetings": 0, "response_rate": "0%"}
+        if not self.leads_ws: return {"total": 0, "high_score": 0, "cold_call_queue": 0, "skipped": 0}
         try:
             records = self._safe_get_all_records()
             total = len(records)
-            sent = len([r for r in records if r.get('Status') in ['linkedin_sent', 'email_sent', 'responded', 'meeting_booked']])
-            meetings = len([r for r in records if r.get('Status') == 'meeting_booked'])
-            response_rate = f"{(len([r for r in records if r.get('Status') in ['responded', 'meeting_booked']]) / sent * 100):.1f}%" if sent > 0 else "0%"
-            return {"total": total, "sent": sent, "meetings": meetings, "response_rate": response_rate}
+            
+            high_score = 0
+            for r in records:
+                try:
+                    if int(r.get('Score', 0) or 0) >= 7: high_score += 1
+                except:
+                    pass
+                    
+            cold_call_queue = len([r for r in records if r.get('Status') in ['cold_call_queue', 'secondary_call_queue']])
+            skipped = len([r for r in records if r.get('Status') in ['skipped', 'dead']])
+            return {"total": total, "high_score": high_score, "cold_call_queue": cold_call_queue, "skipped": skipped}
         except:
-            return {"total": 0, "sent": 0, "meetings": 0, "response_rate": "0%"}
+            return {"total": 0, "high_score": 0, "cold_call_queue": 0, "skipped": 0}
 
 sheets_client = SheetsClient()

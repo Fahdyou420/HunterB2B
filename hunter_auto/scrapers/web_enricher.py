@@ -88,6 +88,30 @@ class WebEnricher:
         emails = list(set([e.lower() for e in emails if e]))
         phones = list(set([p.replace(' ', '') for p in phones if p]))
         
+        # If still no contacts, try a DuckDuckGo search
+        if not emails and not phones:
+            logger.info(f"No contacts found from website, falling back to DuckDuckGo search for: {company}")
+            try:
+                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+                query = f"{company} Tunisie contact phone telephone email"
+                ddg_url = f"https://html.duckduckgo.com/html/?q={query}"
+                ddg_resp = requests.get(ddg_url, headers=headers, timeout=15)
+                ddg_soup = BeautifulSoup(ddg_resp.text, 'html.parser')
+                ddg_text = ddg_soup.get_text()
+                
+                # Broaden phone regex for Tunisisan numbers in search results
+                found_phones = re.findall(r'(?:\+?216\s?|00\s?216\s?)?[2-9]\d{1}(?:\s?\d{2}){3}|(?:\+?216\s?)?[97542]\d{7}', ddg_text)
+                found_emails = re.findall(r'[a-zA-Z0-9.\-+_]+@[a-zA-Z0-9.\-+_]+\.[a-zA-Z]+', ddg_text)
+                
+                emails.extend(found_emails)
+                phones.extend(found_phones)
+                
+                # Cleanup again
+                emails = list(set([e.lower() for e in emails if e and not e.endswith('duckduckgo.com')]))
+                phones = list(set([p.replace(' ', '') for p in phones if p]))
+            except Exception as e:
+                logger.error(f"DuckDuckGo search fallback failed for {company}: {e}")
+
         logger.info(f"Enrichment results for {company}: Emails: {len(emails)}, Phones: {len(phones)}")
         
         return {

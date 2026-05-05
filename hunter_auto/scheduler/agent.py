@@ -25,7 +25,7 @@ class AutomationAgent:
 
     def outreach_job(self):
         from config.logger import logger
-        logger.info("[Agent] Running outreach_job (Contact Router + Outreach Paths)...")
+        logger.info("[Agent] Running outreach_job (Cold Call MatchMaker)...")
         limit = app_settings.OUTREACH_DAILY_LIMIT
         outreach_router.process_pending_leads(batch_size=limit)
 

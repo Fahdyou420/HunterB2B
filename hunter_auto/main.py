@@ -13,4 +13,11 @@ for folder in ["config", "scrapers", "ai", "outreach", "database", "scheduler", 
 if __name__ == '__main__':
     print("Starting Hunter Auto 1.0...")
     agent.start()
-    app.run(host="0.0.0.0", port=5000)
+    try:
+        from waitress import serve
+        print("Running with Waitress WSGI server on port 5000...")
+        serve(app, host="0.0.0.0", port=5000)
+    except ImportError:
+        print("Waitress not found. Please install it using: pip install waitress")
+        print("Falling back to standard Flask dev server...")
+        app.run(host="0.0.0.0", port=5000)

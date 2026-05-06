@@ -7,3 +7,4 @@ apscheduler
 python-telegram-bot
 python-dotenv
 requests
+waitress

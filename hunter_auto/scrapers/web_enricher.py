@@ -23,7 +23,7 @@ class WebEnricher:
                 found_emails = re.findall(r'[a-zA-Z0-9.\-+_]+@[a-zA-Z0-9.\-+_]+\.[a-zA-Z]+', text)
                 
                 # Broaden phone regex to catch standard international and local tunisian numbers
-                found_phones = re.findall(r'(?:\+?216\s?|00\s?216\s?)?[2-9]\d{1}(?:\s?\d{2}){3}|(?:\+?216\s?)?[97542]\d{7}', text)
+                found_phones = re.findall(r'\b(?:\+?216[-.\s]?|00[-.\s]?216[-.\s]?)?[234579]\d(?:[-.\s]?\d{2}){3}\b|\b(?:\+?216[-.\s]?|00[-.\s]?216[-.\s]?)?[234579]\d{7}\b', text)
                 
                 emails.extend(found_emails)
                 phones.extend(found_phones)
@@ -68,7 +68,7 @@ class WebEnricher:
                             c_text = c_soup.get_text()
                             
                             c_emails = re.findall(r'[a-zA-Z0-9.\-+_]+@[a-zA-Z0-9.\-+_]+\.[a-zA-Z]+', c_text)
-                            c_phones = re.findall(r'(?:\+?216\s?|00\s?216\s?)?[2-9]\d{1}(?:\s?\d{2}){3}|(?:\+?216\s?)?[97542]\d{7}', c_text)
+                            c_phones = re.findall(r'\b(?:\+?216[-.\s]?|00[-.\s]?216[-.\s]?)?[234579]\d(?:[-.\s]?\d{2}){3}\b|\b(?:\+?216[-.\s]?|00[-.\s]?216[-.\s]?)?[234579]\d{7}\b', c_text)
                             
                             emails.extend(c_emails)
                             phones.extend(c_phones)
@@ -100,7 +100,7 @@ class WebEnricher:
                 ddg_text = ddg_soup.get_text()
                 
                 # Broaden phone regex for Tunisisan numbers in search results
-                found_phones = re.findall(r'(?:\+?216\s?|00\s?216\s?)?[2-9]\d{1}(?:\s?\d{2}){3}|(?:\+?216\s?)?[97542]\d{7}', ddg_text)
+                found_phones = re.findall(r'\b(?:\+?216[-.\s]?|00[-.\s]?216[-.\s]?)?[234579]\d(?:[-.\s]?\d{2}){3}\b|\b(?:\+?216[-.\s]?|00[-.\s]?216[-.\s]?)?[234579]\d{7}\b', ddg_text)
                 found_emails = re.findall(r'[a-zA-Z0-9.\-+_]+@[a-zA-Z0-9.\-+_]+\.[a-zA-Z]+', ddg_text)
                 
                 emails.extend(found_emails)

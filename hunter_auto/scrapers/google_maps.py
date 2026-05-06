@@ -57,7 +57,7 @@ class GoogleMapsScraper:
                             
                             logger.info(f"Processing Maps lead: {name}")
                             
-                            if not sheets_client.lead_exists(phone=name) or sync_mode:
+                            if not sheets_client.lead_exists(company=name) or sync_mode:
                                 lead = {
                                     "id": f"gm_{str(random.randint(100000, 999999))}",
                                     "name": "",
@@ -76,13 +76,16 @@ class GoogleMapsScraper:
                                 if enrichment.get("emails") or enrichment.get("phones"):
                                     lead["email"] = enrichment["emails"][0] if enrichment.get("emails") else ""
                                     lead["phone"] = enrichment["phones"][0] if enrichment.get("phones") else ""
-                                    
-                                    leads.append(lead)
-                                    if not sync_mode:
-                                        sheets_client.add_lead(lead)
-                                    logger.info(f"Saved lead: {name} to pipeline (found contacts).")
+                                    logger.info(f"Contacts found for {name}.")
                                 else:
-                                    logger.info(f"Skipping lead {name} - No contact options (email/phone) found.")
+                                    lead["status"] = "skipped"
+                                    lead["notes"] += " | No contact options found initially"
+                                    logger.info(f"No contact options found initially for {name}, saving as skipped.")
+                                
+                                leads.append(lead)
+                                if not sync_mode:
+                                    sheets_client.add_lead(lead)
+                                logger.info(f"Saved lead: {name} to pipeline.")
                             else:
                                 logger.info(f"Lead {name} already exists. Skipping.")
                         except Exception as e:

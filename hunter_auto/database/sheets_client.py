@@ -40,7 +40,7 @@ class SheetsClient:
         ]
         self.leads_ws.append_row(row)
 
-    def lead_exists(self, linkedin_url=None, phone=None):
+    def lead_exists(self, linkedin_url=None, phone=None, company=None):
         if not self.leads_ws: return False
         try:
             if linkedin_url:
@@ -49,6 +49,9 @@ class SheetsClient:
             if phone:
                 phones = self.leads_ws.col_values(5)
                 if phone in phones: return True
+            if company:
+                companies = self.leads_ws.col_values(2)
+                if company in companies: return True
         except:
             pass
         return False

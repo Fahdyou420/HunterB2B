@@ -1,22 +1,6 @@
 <div id="scheduler-controls" class="controls-card" style="background: white; padding: 24px; border-radius: 12px; border: 1px solid #E2E8F0; margin-bottom: 24px;">
-    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
-        <div>
-            <h3 style="margin: 0 0 4px 0; font-size: 18px;">Automated Engine Agent</h3>
-            <div style="font-size: 14px; color: #64748B;">
-                System Status: <strong style="color: {{ '#10B981' if scheduler_status.is_running else '#EF4444' }}">{{ "Active (Running)" if scheduler_status.is_running else "Paused" }}</strong>
-            </div>
-        </div>
-        <div class="actions">
-            {% if scheduler_status.is_running %}
-                <button class="btn" style="background:#FEF2F2; color:#EF4444; border: 1px solid #FCA5A5;" hx-post="/api/action/pause" hx-target="#scheduler-controls" hx-swap="outerHTML">
-                    <i data-lucide="pause-circle" size="18"></i> Pause AI Mode
-                </button>
-            {% else %}
-                <button class="btn" style="background:#ECFDF5; color:#10B981; border: 1px solid #6EE7B7;" hx-post="/api/action/resume" hx-target="#scheduler-controls" hx-swap="outerHTML">
-                    <i data-lucide="play-circle" size="18"></i> Resume AI Mode
-                </button>
-            {% endif %}
-        </div>
+    <div id="scheduler-header" hx-get="/api/scheduler_status" hx-trigger="every 5s" style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px;">
+        {% include 'partials/scheduler_header.html' %}
     </div>
 
     <div style="border-top: 1px solid #E2E8F0; margin: 20px 0;"></div>
@@ -29,10 +13,18 @@
             <div style="color: #64748B; font-size: 12px; text-transform: uppercase; font-weight: 600; margin-bottom: 8px;">1. Scraping Layer</div>
             <form hx-post="/api/action/trigger_scrape" hx-swap="none" onsubmit="alert('Scraping started. Check logs.')" style="display: flex; flex-direction: column; gap: 8px; text-align: left;">
                 <label style="font-size: 12px; color: #475569;">Target Sector:</label>
-                <input type="text" name="sector" value="IT" style="padding: 6px; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 4px;" required>
+                <select name="sector" style="padding: 6px; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 4px;">
+                    {% for s in target_sectors %}
+                    <option value="{{ s }}">{{ s }}</option>
+                    {% endfor %}
+                </select>
                 
                 <label style="font-size: 12px; color: #475569;">City / Governorate:</label>
-                <input type="text" name="city" value="Tunis" style="padding: 6px; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 4px;" required>
+                <select name="city" style="padding: 6px; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 4px;">
+                    {% for c in target_cities %}
+                    <option value="{{ c }}">{{ c }}</option>
+                    {% endfor %}
+                </select>
                 
                 <label style="font-size: 12px; color: #475569;">Limit per source:</label>
                 <input type="number" name="limit" value="10" min="1" max="50" style="padding: 6px; font-size: 13px; border: 1px solid #CBD5E1; border-radius: 4px;" required>

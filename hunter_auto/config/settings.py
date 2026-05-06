@@ -23,12 +23,13 @@ GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
 HUNTER_IO_API_KEY = os.getenv("HUNTER_IO_API_KEY")
 
 TARGET_SECTORS = [s.strip() for s in os.getenv("TARGET_SECTORS", "Banque,Industrie,Commerce,IT").split(",")]
+TARGET_CITIES = [c.strip() for c in os.getenv("TARGET_CITIES", "Tunis,Sfax,Sousse,Ariana").split(",")]
 OUTREACH_DAILY_LIMIT = int(os.getenv("OUTREACH_DAILY_LIMIT", "15"))
 SCRAPE_INTERVAL_HOURS = int(os.getenv("SCRAPE_INTERVAL_HOURS", "2"))
 TIMEZONE = os.getenv("TIMEZONE", "Africa/Tunis")
 
 def update_settings(new_settings):
-    global OLLAMA_HOST, OLLAMA_MODEL, TARGET_SECTORS, OUTREACH_DAILY_LIMIT, SCRAPE_INTERVAL_HOURS, TIMEZONE
+    global OLLAMA_HOST, OLLAMA_MODEL, TARGET_SECTORS, TARGET_CITIES, OUTREACH_DAILY_LIMIT, SCRAPE_INTERVAL_HOURS, TIMEZONE
     
     if "OLLAMA_HOST" in new_settings:
         OLLAMA_HOST = new_settings["OLLAMA_HOST"]
@@ -39,6 +40,9 @@ def update_settings(new_settings):
     if "TARGET_SECTORS" in new_settings:
         TARGET_SECTORS = new_settings["TARGET_SECTORS"]
         set_key(ENV_PATH, "TARGET_SECTORS", ",".join(TARGET_SECTORS))
+    if "TARGET_CITIES" in new_settings:
+        TARGET_CITIES = new_settings["TARGET_CITIES"]
+        set_key(ENV_PATH, "TARGET_CITIES", ",".join(TARGET_CITIES))
     if "OUTREACH_DAILY_LIMIT" in new_settings:
         OUTREACH_DAILY_LIMIT = int(new_settings["OUTREACH_DAILY_LIMIT"])
         set_key(ENV_PATH, "OUTREACH_DAILY_LIMIT", str(OUTREACH_DAILY_LIMIT))

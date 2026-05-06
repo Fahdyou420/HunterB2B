@@ -8,9 +8,10 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
+    from config.settings import TARGET_SECTORS, TARGET_CITIES
     stats = sheets_client.get_stats()
     scheduler_status = agent.get_status()
-    return render_template('index.html', stats=stats, scheduler_status=scheduler_status)
+    return render_template('index.html', stats=stats, scheduler_status=scheduler_status, target_sectors=TARGET_SECTORS, target_cities=TARGET_CITIES)
 
 @app.route('/leads')
 def leads():
@@ -20,7 +21,7 @@ def leads():
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
-    from config.settings import update_settings, OLLAMA_HOST, OLLAMA_MODEL, TARGET_SECTORS, TIMEZONE, SCRAPE_INTERVAL_HOURS, OUTREACH_DAILY_LIMIT
+    from config.settings import update_settings, OLLAMA_HOST, OLLAMA_MODEL, TARGET_SECTORS, TARGET_CITIES, TIMEZONE, SCRAPE_INTERVAL_HOURS, OUTREACH_DAILY_LIMIT
     
     success = False
     if request.method == 'POST':
@@ -30,6 +31,12 @@ def settings():
         if custom_sectors_str.strip():
             custom_sectors = [s.strip() for s in custom_sectors_str.split(',')]
             selected_sectors.extend(custom_sectors)
+
+        selected_cities = request.form.getlist('cities')
+        custom_cities_str = request.form.get('custom_cities', '')
+        if custom_cities_str.strip():
+            custom_cities = [s.strip() for s in custom_cities_str.split(',')]
+            selected_cities.extend(custom_cities)
             
         ollama_host = request.form.get('ollama_host', '').strip()
         ollama_model = request.form.get('ollama_model', '').strip()
@@ -40,6 +47,7 @@ def settings():
         
         new_settings = {}
         if selected_sectors: new_settings['TARGET_SECTORS'] = selected_sectors
+        if selected_cities: new_settings['TARGET_CITIES'] = selected_cities
         if ollama_host: new_settings['OLLAMA_HOST'] = ollama_host
         if ollama_model: new_settings['OLLAMA_MODEL'] = ollama_model
         if timezone: new_settings['TIMEZONE'] = timezone
@@ -55,9 +63,15 @@ def settings():
     current_custom_sectors = [s for s in TARGET_SECTORS if s not in default_sectors]
     custom_sectors_str = ", ".join(current_custom_sectors)
 
+    default_cities = ['Tunis', 'Sfax', 'Sousse', 'Ariana', 'Bizerte', 'Nabeul', 'Monastir']
+    current_custom_cities = [c for c in TARGET_CITIES if c not in default_cities]
+    custom_cities_str = ", ".join(current_custom_cities)
+
     return render_template('settings.html', 
                             target_sectors=TARGET_SECTORS, 
                             custom_sectors=custom_sectors_str,
+                            target_cities=TARGET_CITIES,
+                            custom_cities=custom_cities_str,
                             ollama_host=OLLAMA_HOST,
                             ollama_model=OLLAMA_MODEL,
                             timezone=TIMEZONE,
@@ -78,12 +92,16 @@ def api_stats_html():
 @app.route('/api/action/pause', methods=['POST'])
 def pause_scheduler():
     agent.pause()
-    return render_template('partials/controls.html', scheduler_status=agent.get_status())
+    return render_template('partials/scheduler_header.html', scheduler_status=agent.get_status())
 
 @app.route('/api/action/resume', methods=['POST'])
 def resume_scheduler():
     agent.resume()
-    return render_template('partials/controls.html', scheduler_status=agent.get_status())
+    return render_template('partials/scheduler_header.html', scheduler_status=agent.get_status())
+
+@app.route('/api/scheduler_status')
+def get_scheduler_status():
+    return render_template('partials/scheduler_header.html', scheduler_status=agent.get_status())
 
 @app.route('/api/action/trigger_scrape', methods=['POST'])
 def trigger_scrape():

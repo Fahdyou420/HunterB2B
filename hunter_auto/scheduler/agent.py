@@ -12,9 +12,10 @@ class AutomationAgent:
     def scrape_job(self):
         from config.logger import logger
         logger.info("[Agent] Running scrape_job (Maps & LinkedIn)...")
-        for sector in app_settings.TARGET_SECTORS:
-            google_maps_scraper.scrape_by_sector(sector)
-            linkedin_scraper.scrape_decision_makers(sector)
+        for city in app_settings.TARGET_CITIES:
+            for sector in app_settings.TARGET_SECTORS:
+                google_maps_scraper.scrape_by_sector(sector, city=city)
+                linkedin_scraper.scrape_decision_makers(sector, city=city)
 
     def enrich_job(self):
         from config.logger import logger

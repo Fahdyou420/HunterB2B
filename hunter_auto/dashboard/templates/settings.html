@@ -14,24 +14,46 @@
 <form method="POST">
     <div style="display: grid; gap: 24px;">
         
-        <!-- Target Sectors -->
-        <div class="settings-card">
-            <h3>Target Sectors</h3>
-            <p style="color: #64748B; font-size: 14px; margin-bottom: 20px;">
-                Select or add sectors the Hunter Auto agent should focus on in the Tunisian market.
-            </p>
-            <div class="checkbox-group">
-                {% set available_sectors = ['Banque', 'Industrie', 'Commerce', 'IT', 'Télécom', 'Assurance', 'Transport', 'Santé'] %}
-                {% for sector in available_sectors %}
-                <label>
-                    <input type="checkbox" name="sectors" value="{{ sector }}" {% if sector in target_sectors %}checked{% endif %}> {{ sector }}
-                </label>
-                {% endfor %}
+        <!-- Target Sectors & Cities -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <div class="settings-card">
+                <h3>Target Sectors</h3>
+                <p style="color: #64748B; font-size: 14px; margin-bottom: 20px;">
+                    Select or add sectors the agent should focus on.
+                </p>
+                <div class="checkbox-group">
+                    {% set available_sectors = ['Banque', 'Industrie', 'Commerce', 'IT', 'Télécom', 'Assurance', 'Transport', 'Santé'] %}
+                    {% for sector in available_sectors %}
+                    <label>
+                        <input type="checkbox" name="sectors" value="{{ sector }}" {% if sector in target_sectors %}checked{% endif %}> {{ sector }}
+                    </label>
+                    {% endfor %}
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <label style="font-size: 14px; font-weight: 500; display: block; margin-bottom: 8px;">Custom Sectors (comma separated)</label>
+                    <input type="text" name="custom_sectors" placeholder="e.g. Immobilier, Agriculture" class="form-input" value="{{ custom_sectors }}">
+                </div>
             </div>
-            
-            <div style="margin-top: 15px;">
-                <label style="font-size: 14px; font-weight: 500; display: block; margin-bottom: 8px;">Custom Sectors (comma separated)</label>
-                <input type="text" name="custom_sectors" placeholder="e.g. Immobilier, Agriculture" class="form-input" value="{{ custom_sectors }}">
+
+            <div class="settings-card">
+                <h3>Target Cities</h3>
+                <p style="color: #64748B; font-size: 14px; margin-bottom: 20px;">
+                    Select or add Tunisian cities to target.
+                </p>
+                <div class="checkbox-group">
+                    {% set available_cities = ['Tunis', 'Sfax', 'Sousse', 'Ariana', 'Bizerte', 'Nabeul', 'Monastir'] %}
+                    {% for city in available_cities %}
+                    <label>
+                        <input type="checkbox" name="cities" value="{{ city }}" {% if city in target_cities %}checked{% endif %}> {{ city }}
+                    </label>
+                    {% endfor %}
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <label style="font-size: 14px; font-weight: 500; display: block; margin-bottom: 8px;">Custom Cities (comma separated)</label>
+                    <input type="text" name="custom_cities" placeholder="e.g. Djerba, Gabès" class="form-input" value="{{ custom_cities }}">
+                </div>
             </div>
         </div>
 

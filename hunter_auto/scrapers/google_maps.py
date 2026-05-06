@@ -8,7 +8,9 @@ from scrapers.web_enricher import web_enricher
 class GoogleMapsScraper:
     def scrape_by_sector(self, sector, limit=10, sync_mode=False, city='Tunis'):
         logger.info(f"Starting Google Maps scrape for sector: {sector} in {city} with limit: {limit}")
-        queries = [f"entreprises {sector} {city}", f"{sector} {city}"]
+        business_types = ["Entreprise", "Société", "Agence", "Cabinet", "Boutique", "Fournisseur", "Grossiste", "Service"]
+        queries = [f"{bt} {sector} {city}" for bt in business_types]
+        queries.extend([f"{sector} {city}", f"meilleur {sector} {city}"])
         
         leads = []
         with sync_playwright() as p:
@@ -51,9 +53,46 @@ class GoogleMapsScraper:
                     
                     for el in elements[:limit]:
                         try:
+                            # Click the element to open the detail pane
+                            try:
+                                el.locator("a.hfpxzc").click(timeout=5000)
+                                time.sleep(random.uniform(2, 4))
+                            except:
+                                pass
+                                
                             name = el.locator(".qBF1Pd").inner_text() if el.locator(".qBF1Pd").count() > 0 else "Unknown"
-                            website_el = el.locator("a[href^='http']").first
-                            website_url = website_el.get_attribute("href") if website_el else None
+                            
+                            # Now try to extract from detail pane
+                            website_url = None
+                            try:
+                                website_el = page.locator("a[data-item-id='authority']").first
+                                if website_el.count() > 0:
+                                    website_url = website_el.get_attribute("href")
+                            except: pass
+                            
+                            address = ""
+                            try:
+                                addr_el = page.locator("button[data-tooltip*='adresse']").first
+                                if addr_el.count() > 0:
+                                    address = addr_el.inner_text()
+                                else:
+                                    # Fallback for English language
+                                    addr_el = page.locator("button[data-tooltip*='address']").first
+                                    if addr_el.count() > 0:
+                                        address = addr_el.inner_text()
+                            except: pass
+                            
+                            phone = ""
+                            try:
+                                phone_el = page.locator("button[data-tooltip*='téléphone']").first
+                                if phone_el.count() > 0:
+                                    phone = phone_el.inner_text()
+                                else:
+                                    # Fallback for English language
+                                    phone_el = page.locator("button[data-tooltip*='phone']").first
+                                    if phone_el.count() > 0:
+                                        phone = phone_el.inner_text()
+                            except: pass
                             
                             logger.info(f"Processing Maps lead: {name}")
                             
@@ -70,12 +109,20 @@ class GoogleMapsScraper:
                                     "notes": f"WEBSITE: {website_url}" if website_url else ""
                                 }
                                 
+                                if address:
+                                    lead["notes"] += f" | ADDRESS: {address}"
+
                                 logger.info(f"Checking contact options for {name}...")
                                 enrichment = web_enricher.enrich_lead(name, website_url)
                                 
-                                if enrichment.get("emails") or enrichment.get("phones"):
-                                    lead["email"] = enrichment["emails"][0] if enrichment.get("emails") else ""
-                                    lead["phone"] = enrichment["phones"][0] if enrichment.get("phones") else ""
+                                final_emails = enrichment.get("emails", [])
+                                final_phones = enrichment.get("phones", [])
+                                if phone and phone not in final_phones:
+                                    final_phones.append(phone)
+                                    
+                                if final_emails or final_phones:
+                                    lead["email"] = final_emails[0] if final_emails else ""
+                                    lead["phone"] = final_phones[0] if final_phones else ""
                                     logger.info(f"Contacts found for {name}.")
                                 else:
                                     lead["status"] = "skipped"

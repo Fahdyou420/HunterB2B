@@ -43,9 +43,28 @@ class EnrichmentEngine:
                 sheets_client.update_lead_status(lead_id, "dead", "No phone found after deep search")
                 continue
 
+            # 1.5 Gather Company Intelligence via DuckDuckGo before Scoring
+            company_intel = ""
+            try:
+                import requests
+                from bs4 import BeautifulSoup
+                intel_headers = {'User-Agent': 'Mozilla/5.0'}
+                intel_query = f"{company} Tunisie à propos entreprise"
+                intel_url = f"https://html.duckduckgo.com/html/?q={intel_query}"
+                intel_resp = requests.get(intel_url, headers=intel_headers, timeout=10)
+                intel_soup = BeautifulSoup(intel_resp.text, 'html.parser')
+                snippets = [a.get_text() for a in intel_soup.find_all('a', class_='result__snippet')]
+                company_intel = " | ".join(snippets[:3])
+            except Exception as e:
+                logger.error(f"Failed to gather company intel for {company}: {e}")
+
             # 2. AI Scoring
             logger.info(f"Scoring lead via Ollama: {company}")
-            score, reason = lead_scorer.score_lead({"company": company, "title": lead.get('Title', '')})
+            score, reason = lead_scorer.score_lead({
+                "company": company, 
+                "title": lead.get('Title', ''),
+                "intel": company_intel
+            })
             
             logger.info(f"AI Score for {company}: {score}/10")
             

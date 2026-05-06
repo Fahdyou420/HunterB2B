@@ -31,14 +31,17 @@ class SheetsClient:
 
     def add_lead(self, lead_data):
         if not self.leads_ws: return
-        row = [
-            lead_data.get('id', ''), lead_data.get('company', ''), lead_data.get('name', ''),
-            lead_data.get('title', ''), lead_data.get('phone', ''), lead_data.get('email', ''),
-            lead_data.get('linkedin_url', ''), lead_data.get('source', ''), lead_data.get('score', ''),
-            lead_data.get('status', 'pending'), lead_data.get('message_sent', ''),
-            lead_data.get('sent_at', ''), lead_data.get('notes', '')
-        ]
-        self.leads_ws.append_row(row)
+        try:
+            row = [
+                lead_data.get('id', ''), lead_data.get('company', ''), lead_data.get('name', ''),
+                lead_data.get('title', ''), lead_data.get('phone', ''), lead_data.get('email', ''),
+                lead_data.get('linkedin_url', ''), lead_data.get('source', ''), lead_data.get('score', ''),
+                lead_data.get('status', 'pending'), lead_data.get('message_sent', ''),
+                lead_data.get('sent_at', ''), lead_data.get('notes', '')
+            ]
+            self.leads_ws.append_row(row)
+        except Exception as e:
+            print(f"Error adding lead to Google Sheet: {e}")
 
     def lead_exists(self, linkedin_url=None, phone=None, company=None):
         if not self.leads_ws: return False

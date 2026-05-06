@@ -88,29 +88,66 @@ class WebEnricher:
         emails = list(set([e.lower() for e in emails if e]))
         phones = list(set([p.replace(' ', '') for p in phones if p]))
         
-        # If still no contacts, try a DuckDuckGo search
+        # If still no contacts, try a DuckDuckGo search and Dorking
         if not emails and not phones:
-            logger.info(f"No contacts found from website, falling back to DuckDuckGo search for: {company}")
+            logger.info(f"No contacts found from website, initiating Advanced Dorking for: {company}")
             try:
-                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-                query = f"{company} Tunisie contact phone telephone email"
-                ddg_url = f"https://html.duckduckgo.com/html/?q={query}"
-                ddg_resp = requests.get(ddg_url, headers=headers, timeout=15)
-                ddg_soup = BeautifulSoup(ddg_resp.text, 'html.parser')
-                ddg_text = ddg_soup.get_text()
+                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
                 
-                # Broaden phone regex for Tunisisan numbers in search results
-                found_phones = re.findall(r'\b(?:\+?216[-.\s]?|00[-.\s]?216[-.\s]?)?[234579]\d(?:[-.\s]?\d{2}){3}\b|\b(?:\+?216[-.\s]?|00[-.\s]?216[-.\s]?)?[234579]\d{7}\b', ddg_text)
-                found_emails = re.findall(r'[a-zA-Z0-9.\-+_]+@[a-zA-Z0-9.\-+_]+\.[a-zA-Z]+', ddg_text)
+                # Setup Dorks
+                domain = website_url.replace('http://', '').replace('https://', '').split('/')[0].replace('www.', '') if website_url else ""
                 
-                emails.extend(found_emails)
-                phones.extend(found_phones)
+                dork_queries = [
+                    f'"{company}" AND ("email" OR "contact" OR "téléphone" OR "phone") "Tunisie"',
+                ]
                 
+                if domain:
+                    dork_queries.append(f'"@{domain}" OR "contact@{domain}" OR "info@{domain}"')
+                    dork_queries.append(f'site:{domain} "email" OR "téléphone"')
+                    
+                for query in dork_queries:
+                    logger.info(f"Executing Dork: {query}")
+                    ddg_url = f"https://html.duckduckgo.com/html/?q={query}"
+                    ddg_resp = requests.get(ddg_url, headers=headers, timeout=15)
+                    ddg_soup = BeautifulSoup(ddg_resp.text, 'html.parser')
+                    ddg_text = ddg_soup.get_text()
+                    
+                    found_phones = re.findall(r'\b(?:\+?216[-.\s]?|00[-.\s]?216[-.\s]?)?[234579]\d(?:[-.\s]?\d{2}){3}\b|\b(?:\+?216[-.\s]?|00[-.\s]?216[-.\s]?)?[234579]\d{7}\b', ddg_text)
+                    found_emails = re.findall(r'[a-zA-Z0-9.\-+_]+@[a-zA-Z0-9.\-+_]+\.[a-zA-Z]+', ddg_text)
+                    
+                    # Also use AI to extract hidden context from Dork results
+                    ai_extract = contact_extractor.extract_contact_info(ddg_text[:3000])
+                    found_emails.extend(ai_extract.get('emails', []))
+                    found_phones.extend(ai_extract.get('phones', []))
+                    
+                    emails.extend(found_emails)
+                    phones.extend(found_phones)
+                    time.sleep(1)  # small backoff
+
                 # Cleanup again
-                emails = list(set([e.lower() for e in emails if e and not e.endswith('duckduckgo.com')]))
+                emails = list(set([e.lower() for e in emails if e and not 'duckduckgo' in e.lower()]))
                 phones = list(set([p.replace(' ', '') for p in phones if p]))
             except Exception as e:
-                logger.error(f"DuckDuckGo search fallback failed for {company}: {e}")
+                logger.error(f"Advanced Dorking failed for {company}: {e}")
+
+        # Public Registries & Records search for company datas
+        if not emails and not phones:
+            logger.info(f"Initiating Public Records Search for {company}")
+            try:
+                headers = {'User-Agent': 'Mozilla/5.0'}
+                reg_query = f"{company} registre de commerce tunisie OR identifiant fiscal OR patente"
+                ddg_url = f"https://html.duckduckgo.com/html/?q={reg_query}"
+                ddg_resp = requests.get(ddg_url, headers=headers, timeout=15)
+                ddg_text = BeautifulSoup(ddg_resp.text, 'html.parser').get_text()
+                
+                # Fast regex for numbers again
+                emails.extend(re.findall(r'[a-zA-Z0-9.\-+_]+@[a-zA-Z0-9.\-+_]+\.[a-zA-Z]+', ddg_text))
+                phones.extend(re.findall(r'\b(?:\+?216[-.\s]?|00[-.\s]?216[-.\s]?)?[234579]\d(?:[-.\s]?\d{2}){3}\b|\b(?:\+?216[-.\s]?|00[-.\s]?216[-.\s]?)?[234579]\d{7}\b', ddg_text))
+                
+                emails = list(set([e.lower() for e in emails if e and not 'duckduckgo' in e.lower()]))
+                phones = list(set([p.replace(' ', '') for p in phones if p]))
+            except Exception as e:
+                logger.error(f"Public records search failed: {e}")
 
         logger.info(f"Enrichment results for {company}: Emails: {len(emails)}, Phones: {len(phones)}")
         

@@ -26,7 +26,9 @@ class LinkedinScraper:
         
     def scrape_decision_makers(self, sector, limit=10, sync_mode=False, city='Tunis'):
         logger.info(f"Scraping LinkedIn for {sector} in {city} with target {limit} leads")
-        queries = [f"directeur {sector} {city}", f"CEO {sector} {city}"]
+        decision_maker_titles = ["Directeur", "CEO", "Gérant", "DRH", "Fondateur", "Manager", "Responsable"]
+        queries = [f"{title} {sector} {city}" for title in decision_maker_titles]
+        queries.extend([f"Directeur commercial {sector} {city}", f"CTO {sector} {city}"])
         leads = []
         
         with sync_playwright() as p:
